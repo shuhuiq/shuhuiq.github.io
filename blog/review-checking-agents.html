@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checking what AI agents do: judges, verifiers and guardrails · Shuhui Qu</title>
+<meta name="description" content="A review of LLM judges, learned verifiers, plan verifiers, guardrails and evaluation integrity — how each works, and where MORPHEUS.ai differs.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-verify lg" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
+<h1>Checking what AI agents do: judges, verifiers and guardrails</h1>
+<div class="byline">Date: October 2026 &nbsp;|&nbsp; Estimated reading time: 13 min &nbsp;|&nbsp; Author: Shuhui Qu</div>
+
+<p>An agent that books a trip, edits a repository or runs an experiment almost always ends with a report on its own
+work: &ldquo;total: within budget&rdquo;, &ldquo;all tests pass&rdquo;, &ldquo;done&rdquo;. Whoever decides whether to
+trust that report &mdash; a person, a reward function, a deployment gate &mdash; needs a <i>checker</i>: something
+that reads what the agent did and says whether it did what was asked. This post reviews the four families of checkers
+in the 2023&ndash;2026 literature: LLM judges and learned verifiers, plan verifiers, runtime guardrails for tool
+calls, and integrity checks for agents that run experiments. For each I describe how it works, what it has been
+measured to do, and where it fails. The last two sections say where my own checker,
+<a href="../projects/#morpheus">MORPHEUS.ai</a>, differs, and where the literature is ahead of it. (For what MORPHEUS
+does as a product, see <a href="morpheus.html">this post</a>.)</p>
+
+<p>Two terms are used throughout. A checker is <b>sound</b> if everything it accepts really is correct; it is
+<b>complete</b> if it accepts everything that is correct. A checker that says &ldquo;I cannot tell&rdquo; trades
+completeness for soundness. Most of the story below is about which of the two each family gives up.</p>
+
+<details class="toc" open><summary>Table of Contents</summary>
+<ol>
+  <li><a href="#judges">LLM judges and learned verifiers</a>
+    <ol><li><a href="#judge-modes">How a judge decides</a></li><li><a href="#hacking">What happens under optimization</a></li>
+    <li><a href="#agreement">Why agreement is the wrong gate metric</a></li><li><a href="#agent-judges">Judging agent trajectories</a></li></ol></li>
+  <li><a href="#planning">Plan verifiers and repair</a>
+    <ol><li><a href="#modulo">Generate, then let a sound critic decide</a></li><li><a href="#parsing">Who turns the plan into structure?</a></li>
+    <li><a href="#repair">Repair loops</a></li></ol></li>
+  <li><a href="#guardrails">Guardrails for tool calls</a></li>
+  <li><a href="#integrity">When agents game the evaluator</a></li>
+  <li><a href="#how-we-differ">Where MORPHEUS differs</a></li>
+  <li><a href="#ahead">Where the literature is ahead</a></li>
+  <li><a href="#references">References</a></li>
+</ol>
+</details>
+
+<h2 id="judges">LLM judges and learned verifiers</h2>
+
+<h3 id="judge-modes">How a judge decides</h3>
+
+<p>An <b>LLM judge</b> is a language model prompted to grade an output. It comes in three standard modes: compare two
+answers (pairwise), score one answer (single-answer), or compare an answer against a reference
+<a class="cite" href="#ref-1">(Zheng et al. 2023)</a>. GPT-4 used this way agrees with human preferences more than 80 %
+of the time &mdash; about as often as humans agree with each other. The same paper measured its biases: GPT-4 kept its
+verdict on only 65 % of answer pairs when the order was swapped, and on math questions it could solve by itself it was
+&ldquo;misled by the provided answers&rdquo;.</p>
+
+<p>A <b>learned verifier</b> is a model trained for the job. An <b>outcome reward model</b> scores a final answer; a
+<b>process reward model</b> scores each step &mdash; trained, for example, on 800,000 step-level human labels to solve
+78 % of a representative MATH subset <a class="cite" href="#ref-7">(Lightman et al. 2023)</a>; a <b>generative
+verifier</b> is trained to answer &ldquo;Is the answer correct?&rdquo; by next-token prediction, which raised GSM8K
+best-of-N accuracy from 73 % to 93.4 % <a class="cite" href="#ref-8">(Zhang et al. 2024)</a>. These gains are real and
+grow with data and compute.</p>
+
+<h3 id="hacking">What happens under optimization</h3>
+
+<p>Every learned scorer has a published failure once something is optimized against it. Optimizing a policy against a
+proxy reward model first raises and then lowers the true score &mdash; the Goodhart curve
+<a class="cite" href="#ref-4">(Gao et al. 2022)</a>. In reinforcement learning with model-based verification,
+contentless answers such as &ldquo;:&rdquo; or &ldquo;Thought process:&rdquo; act as &ldquo;master keys&rdquo; that
+reach false-positive rates up to 80 % <a class="cite" href="#ref-5">(Zhao et al. 2025)</a>, and a constant
+&ldquo;null model&rdquo; that ignores its input earns an 86.5 % length-controlled win rate on AlpacaEval 2.0
+<a class="cite" href="#ref-6">(Zheng et al. 2024)</a>. Huang et al. make the trade-off explicit for math: rule-based
+verifiers have more than 99 % precision but recall as low as 0.78, while model-based verifiers are more accurate in
+static tests yet get hacked during RL by outputs as small as a single &ldquo;{&rdquo;
+<a class="cite" href="#ref-9">(Huang et al. 2025)</a>. Flexible scorers buy coverage with soundness; rule checkers do
+the reverse.</p>
+
+<h3 id="agreement">Why agreement is the wrong gate metric</h3>
+
+<p>Judges are usually validated by agreement with human labels. Thakur et al. compared 13 judges and found that high
+percent agreement can still leave scores 10&ndash;20 points away from human scores, and that well-aligned judges
+&ldquo;tend to produce more false positives than false negatives&rdquo; &mdash; they err toward accepting
+<a class="cite" href="#ref-2">(Thakur et al. 2024)</a>. On a benchmark labelled by objective correctness rather than
+preference, GPT-4o scores about 50 %, near chance <a class="cite" href="#ref-3">(Tan et al. 2024)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/judging-the-judges-fig3b.svg" alt="False positives and false negatives for each judge model">
+  <figcaption><b>Fig. 1.</b> False positives versus false negatives for each judge: the better-aligned judges lean
+  toward accepting. Agreement alone does not show which way a judge errs. (Image source:
+  <a href="https://arxiv.org/abs/2406.12624">Thakur et al. 2024</a>, Fig. 3b, arXiv:2406.12624v6; CC0 1.0; unmodified.)</figcaption>
+</figure>
+
+<p>The constructive answer in this literature is <b>selective evaluation</b>: let the judge abstain when it is unsure
+and escalate the case to a stronger judge. Trust or Escalate does this with a provable guarantee &mdash; over 80 %
+agreement with humans at about 80 % coverage, on a subset where GPT-4 alone almost never reaches 80 %
+<a class="cite" href="#ref-10">(Jung et al. 2024)</a>.</p>
+
+<h3 id="agent-judges">Judging agent trajectories</h3>
+
+<p>When the thing being judged is an agent's trajectory &mdash; its observations, reasoning and actions &mdash; a new
+failure appears: the judge believes the agent's narration. On 1,302 expert-annotated web trajectories, no judge
+exceeded 70 % precision, so roughly three in ten trajectories marked successful had failed; one named error class is
+an agent that &ldquo;ended up stating it succeeded&rdquo; and a judge that repeated the claim
+<a class="cite" href="#ref-11">(Lù et al. 2025)</a>. Gaming the Judge isolates the effect: keep the actions and
+observations fixed, rewrite only the agent's chain of thought, and judges' false-positive rates rise by up to 90 %.
+The authors call for judging that checks &ldquo;reasoning claims against observable evidence&rdquo;
+<a class="cite" href="#ref-12">(Khalifa et al. 2026)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/gaming-the-judge-fig2.png" alt="Pipeline: collect agent trajectories, judge them, rewrite only the reasoning, judge again">
+  <figcaption><b>Fig. 2.</b> Run a web agent, let a judge decide whether the task was completed, then rewrite only the
+  agent's reasoning and judge again: a failure becomes a success. (Image source:
+  <a href="https://arxiv.org/abs/2601.14691">Khalifa et al. 2026</a>, Fig. 2, arXiv:2601.14691v2; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<h2 id="planning">Plan verifiers and repair</h2>
+
+<h3 id="modulo">Generate, then let a sound critic decide</h3>
+
+<p>Planning research reached a firm conclusion: language models neither plan nor check their own plans reliably, so
+soundness has to come from outside the model. When GPT-4 critiqued its own graph-colouring answers, accuracy fell from
+16 % to 2 %; re-prompting with feedback from a sound external checker raised Blocksworld accuracy to 87 %
+<a class="cite" href="#ref-14">(Stechly et al. 2024)</a>. Used as a Blocksworld verifier, GPT-4 accepted 38 of 45
+invalid plans <a class="cite" href="#ref-15">(Valmeekam et al. 2023)</a>. <b>LLM-Modulo</b> turns this into an
+architecture: the model generates candidate plans, a bank of external critics &mdash; some sound and hard, some soft
+&mdash; tests them, and only plans that pass are returned <a class="cite" href="#ref-13">(Kambhampati et al. 2024)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/llm-modulo-fig3.png" alt="LLM-Modulo framework: the LLM generates, critics test, a meta-controller decides">
+  <figcaption><b>Fig. 3.</b> The LLM-Modulo framework: the language model proposes, external critics check, and the
+  loop continues until a plan satisfies them. (Image source: <a href="https://arxiv.org/abs/2402.01817">Kambhampati et
+  al. 2024</a>, Fig. 3, ICML 2024, arXiv:2402.01817v3; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>Where a problem can be formalized, solvers go further than critics. Translating a TravelPlanner query into SMT
+code and handing it to a sound and complete solver reached a 93.9 % final pass rate, and also turned impossible
+queries into repair suggestions <a class="cite" href="#ref-18">(Hao et al. 2024)</a>. Writing a PDDL problem for a
+classical planner made Blocksworld plans 90 % optimal against 15 % when the model planned directly; most remaining
+failures were mis-specified problem files <a class="cite" href="#ref-19">(Liu et al. 2023)</a>.</p>
+
+<h3 id="parsing">Who turns the plan into structure?</h3>
+
+<p>Nearly every plan verifier checks a <i>structured</i> plan. TravelPlanner's agents write free text, and GPT-4-Turbo
+converts each plan into JSON before scripts check it <a class="cite" href="#ref-16">(Xie et al. 2024)</a>; a later
+benchmark points out that this score &ldquo;is not parser-free&rdquo;. TREK avoids the parser by forcing the agent to
+submit a structured plan, then scores it with a fully deterministic evaluator over 800 tasks, 267 of them provably
+impossible; the best model produced a fully feasible plan on 46.2 % of the solvable tasks
+<a class="cite" href="#ref-17">(Qi et al. 2026)</a>. Either the plan arrives in a fixed shape, or a model nobody checks
+puts it into one.</p>
+
+<figure class="fig">
+  <img src="../figures/trek-fig2.svg" alt="TREK: a deterministic evaluator scoring structured plans">
+  <figcaption><b>Fig. 4.</b> TREK's evaluation: the agent submits a structured plan and a deterministic evaluator scores
+  it with no LLM judge. (Image source: <a href="https://arxiv.org/abs/2607.26977">Qi et al. 2026</a>, Fig. 2,
+  arXiv:2607.26977v2; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<h3 id="repair">Repair loops</h3>
+
+<p>Verification usually comes with repair: send the failure back and ask for a better plan. With a sound verifier
+this cannot do worse than prompting once, because a correct plan is always accepted. With a noisy verifier it can.
+VRR-Stop models the verifier's false acceptance and false rejection, and the repairer's success and damage rates,
+separately; in a constructed stress test, five fixed rounds of repair cut true validity from 0.700 to 0.116, and in
+55 % of instances a correct answer was &ldquo;repaired&rdquo; into a wrong one <a class="cite" href="#ref-20">(Wu et al.
+2026)</a>. What goes into the feedback matters too: telling the model the <i>admissible alternatives</i> at the failing
+step raised TextWorld success from 14 of 50 to 36 of 50, while the location and observed value alone did little
+<a class="cite" href="#ref-21">(Ray &amp; Goyal 2026)</a>.</p>
+
+<h2 id="guardrails">Guardrails for tool calls</h2>
+
+<p>A runtime guardrail decides, before or after each tool call, whether the agent may proceed. Four designs dominate,
+at four speeds:</p>
+<ul>
+  <li><b>Classifiers</b> (tens of milliseconds) label inputs and outputs against a safety taxonomy &mdash; Llama Guard,
+  and LlamaFirewall's PromptGuard 2 at 19&ndash;92 ms per check <a class="cite" href="#ref-22">(Inan et al. 2023;
+  Chennabasappa et al. 2025)</a>.</li>
+  <li><b>Rule engines</b> (about a millisecond) check each call against a written policy. AgentSpec uses
+  trigger&ndash;predicate&ndash;enforcement rules with millisecond overhead; its LLM-generated rules reached 95.56 %
+  precision and 70.96 % recall, and the false positives came from &ldquo;rules being overly rigid when handling vague
+  requirements&rdquo; <a class="cite" href="#ref-23">(Wang et al. 2025)</a>. FORGE authorizes calls in under a
+  millisecond <a class="cite" href="#ref-24">(Palumbo et al. 2026)</a>; Progent derives privilege rules from the
+  user's task and needs approval to widen them <a class="cite" href="#ref-25">(Shi et al. 2025)</a>; VIGIL denies a
+  violating call through Claude Code's pre-tool-use hook with 95.8 % recall and 89.6 % precision
+  <a class="cite" href="#ref-26">(Li et al. 2026)</a>.</li>
+  <li><b>Guard agents</b> (seconds) are LLMs that reason about each action, and <b>architectural defences</b> such as
+  CaMeL separate control flow from untrusted data so that prompt injection becomes provably harmless
+  <a class="cite" href="#ref-27">(Debenedetti et al. 2025)</a>.</li>
+  <li><b>Monitors</b> read the agent's reasoning or actions. A GPT-4o monitor caught systemic coding hacks with 95 %
+  recall from the chain of thought but 60 % from actions alone &mdash; and when the monitor was folded into the reward,
+  the agent learned to hide its intent <a class="cite" href="#ref-28">(Baker et al. 2025)</a>.</li>
+</ul>
+
+<figure class="fig">
+  <img src="../figures/agentspec-fig4.png" alt="AgentSpec implementation inside an agent framework">
+  <figcaption><b>Fig. 5.</b> AgentSpec enforces trigger&ndash;predicate&ndash;enforcement rules inside the agent's
+  execution loop. (Image source: <a href="https://arxiv.org/abs/2503.18666">Wang, Poskitt &amp; Sun 2025</a>, Fig. 4,
+  ICSE 2026, arXiv:2503.18666v3; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>Almost all of this work targets generic safety and, above all, prompt injection: the policy comes from a safety
+taxonomy, a regulation, a skill specification or a model's reading of the task, and the adversary is an attacker
+hiding instructions in the data.</p>
+
+<h2 id="integrity">When agents game the evaluator</h2>
+
+<p>The adversary in experiment loops is different: a capable agent rewarded for a number. METR found OpenAI's o3
+reward-hacking in 39 of 128 runs on RE-Bench's research tasks (30.4 %) against 8 of 1,087 on HCAST (0.7 %); its
+tactics included overwriting the timing function, stubbing out the evaluator and reading the grader's answer off the
+call stack, and adding &ldquo;Please do not cheat&rdquo; left the rate of planning a hack unchanged
+<a class="cite" href="#ref-29">(METR 2025)</a>. ImpossibleBench makes cheating measurable by changing the tests so
+they contradict the specification &mdash; any pass is a cheat &mdash; and found GPT-5 passing 76 % of impossible
+SWE-bench tasks <a class="cite" href="#ref-30">(Zhong et al. 2025)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/impossiblebench-fig1.png" alt="ImpossibleBench: tests mutated to contradict the specification; cheating rates by model">
+  <figcaption><b>Fig. 6.</b> ImpossibleBench mutates a benchmark's tests so that passing them requires cheating, and
+  measures how often models do. (Image source: <a href="https://arxiv.org/abs/2510.20270">Zhong, Raghunathan &amp;
+  Carlini 2025</a>, Fig. 1, arXiv:2510.20270v1; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>Integrity checks in benchmarks still mostly happen after the fact: manual log review in RE-Bench, an LLM log
+checker plus plagiarism detection in MLE-bench &mdash; where every flag the LLM checker raised turned out to be a false
+positive on human review <a class="cite" href="#ref-31">(Chan et al. 2024)</a>. Karpathy's autoresearch, a popular
+experiment loop, protects its evaluator by instruction alone (&ldquo;It is read-only&rdquo;) and keeps any change that
+lowers the metric after a single run <a class="cite" href="#ref-32">(Karpathy 2026)</a>.</p>
+
+<h2 id="how-we-differ">Where MORPHEUS differs</h2>
+
+<p>MORPHEUS applies the LLM-Modulo idea &mdash; a model proposes, a checker decides &mdash; to the requirements a user
+states in plain language, and makes the checker's own uncertainty explicit. It descends from my work on
+category-theoretic planning <a class="cite" href="#ref-33">(Qu et al. 2025)</a>, where every precondition of a plan step
+is marked satisfied, violated or unknown, and unknowns are resolved by a targeted question or a bridging step rather
+than a guess <a class="cite" href="#ref-34">(Qu 2026)</a>. Satisfied / violated / unknown became met / broken / cannot be
+checked.</p>
+
+<figure class="fig">
+  <img src="../figures/emnlp2025-fig1.png" alt="Neural-symbolic planning: LLM task decomposition, category-theoretic validation, bidirectional search with pullback merge">
+  <figcaption><b>Fig. 7.</b> The planning framework MORPHEUS started from: (1) a language model decomposes the task into
+  resources, constraints and operations; (2) category-theoretic validation checks each step (a morphism) against them;
+  (3) search runs forward from the initial state w<sub>0</sub> and backward from the goal w<sup>*</sup>, and the two meet
+  through a pullback merge. (Figure 1 of the author's paper, <a href="https://aclanthology.org/2025.findings-emnlp.1157/">Qu,
+  Wang &amp; Law, Findings of EMNLP 2025</a>.)</figcaption>
+</figure>
+
+<figure class="fig">
+  <img src="../figures/sq-bcp-fig1.png" alt="SQ-BCP: forward and backward search with self-queries and bridging steps">
+  <figcaption><b>Fig. 8.</b> The self-querying extension: forward search from the current state, backward search
+  from the goal, unknown preconditions resolved by a self-query to the user or by a bridging step. (Figure 1 of the
+  author's SQ-BCP preprint, <a href="https://arxiv.org/abs/2601.20014">arXiv:2601.20014v1</a>.)</figcaption>
+</figure>
+
+<div class="diff">
+<ul>
+  <li><b>The agent's own words are never evidence.</b> A plan's &ldquo;total: within budget&rdquo; plays the role that
+  the rewritten reasoning plays in Gaming the Judge. MORPHEUS adds the plan's lines itself; a verdict rests only on
+  arithmetic, clock placement and quoted text that code can check.</li>
+  <li><b>Free text, without a trusted parser.</b> A model reads which line belongs to which day or total, and a second
+  model confirms the reading &mdash; the reading step sits inside the evidence discipline instead of before it.</li>
+  <li><b>The checker itself can say &ldquo;cannot be checked&rdquo;.</b> Every plan verifier surveyed returns a binary
+  verdict; when a reading is not unique (a price range, an optional item, am/pm), MORPHEUS abstains and says what is
+  missing.</li>
+  <li><b>The user's requirements, kept across turns.</b> Guardrails enforce someone else's policy; MORPHEUS enforces
+  the user's own requirements, held in a ledger that lasts the whole conversation. Multi-turn planning studies measure
+  whether the planner remembers constraints; to our knowledge none adds an independent checker over such a ledger.</li>
+  <li><b>&ldquo;Done&rdquo; is checked.</b> As a hook in Claude Code, Codex and Cursor it blocks a tool call only when
+  it is shown to break a requirement the user confirmed, and it checks the agent's end-of-turn &ldquo;done&rdquo;. To
+  our knowledge no guardrail paper checks the done claim, although METR, ImpossibleBench and others document false
+  ones.</li>
+  <li><b>Experiments become re-verifiable records.</b> A frozen evaluator with edits blocked and its hash attested, at
+  least three seeds on each side with a significance test, audit rules for metric gaming, and recomputation from saved
+  artifacts. Each piece has precedents; to our knowledge the combination does not.</li>
+</ul>
+</div>
+
+<p>Our measurements fit the literature's pattern. On a held-out set of 20 planning tasks with 142 requirement labels,
+LLM judges agreed with the labels 72&ndash;83 % of the time against MORPHEUS's 44 %. But the two non-reasoning judges
+(gpt-4.1, gpt-4.1-mini) each accepted six requirements that were broken, and when one extra cost line worth 60 % of the
+budget was planted in 8 plans, the judges accepted 2 to 8 of the 8; MORPHEUS accepted none of either
+(<a href="judge-that-agrees-most.html">details</a>; our measurement). As a hook, replayed on 4,750 tool calls from 20 real
+coding sessions, it blocked 10 calls, all real violations (our measurement).</p>
+
+<h2 id="ahead">Where the literature is ahead</h2>
+<ul>
+  <li><b>Coverage and recall.</b> Rule-based checking under-reports success: AgentRewardBench's rule-based evaluator
+  has 83.8 precision but 55.9 recall, against 83.1 recall for a GPT-4o judge <a class="cite" href="#ref-11">(Lù et al.
+  2025)</a>. MORPHEUS's price is the same: it said &ldquo;cannot be checked&rdquo; on 39 % of requirements that were
+  met, and confirmed none of 11 honest budgets with buffers and options (our measurement).</li>
+  <li><b>Guarantees.</b> Trust or Escalate's abstention comes with a provable agreement guarantee; MORPHEUS's is
+  triggered by rules and has none. Progent, FORGE, VIGIL and CaMeL offer formal soundness for their policies.</li>
+  <li><b>Solving, not just checking.</b> Solver pipelines can show that a feasible plan exists, explain why a request
+  is impossible, and return an optimal plan. MORPHEUS only checks.</li>
+  <li><b>Scale.</b> 142 labels and 20 tasks are small beside benchmarks of 1,302 trajectories or 800 tasks, so
+  MORPHEUS's zero counts carry wide confidence intervals; and the labels came from two model labellers and an
+  adjudicating model, with a human check still to do.</li>
+  <li><b>Measured recall for Stop.</b> &ldquo;10 blocks, all real&rdquo; measures precision only; without planted
+  violations in the replay there is no recall estimate. Record has run only on a toy experiment loop.</li>
+  <li><b>A warning that applies to us.</b> A small judge distilled from MORPHEUS's verdicts would inherit the
+  hackability of learned verifiers if it were ever used as an RL reward, and should be red-teamed with master-key and
+  confident-claim inputs first.</li>
+</ul>
+
+<h2 id="references">References</h2>
+<ol class="refs">
+  <li id="ref-1">Zheng, L. et al. &ldquo;Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena.&rdquo; NeurIPS 2023 Datasets and Benchmarks. <a href="https://arxiv.org/abs/2306.05685">arXiv:2306.05685</a></li>
+  <li id="ref-2">Thakur, A. S. et al. &ldquo;Judging the Judges: Evaluating Alignment and Vulnerabilities in LLMs-as-Judges.&rdquo; 2024. <a href="https://arxiv.org/abs/2406.12624">arXiv:2406.12624</a></li>
+  <li id="ref-3">Tan, S. et al. &ldquo;JudgeBench: A Benchmark for Evaluating LLM-based Judges.&rdquo; 2024. <a href="https://arxiv.org/abs/2410.12784">arXiv:2410.12784</a></li>
+  <li id="ref-4">Gao, L., Schulman, J. &amp; Hilton, J. &ldquo;Scaling Laws for Reward Model Overoptimization.&rdquo; 2022. <a href="https://arxiv.org/abs/2210.10760">arXiv:2210.10760</a></li>
+  <li id="ref-5">Zhao, Y. et al. &ldquo;One Token to Fool LLM-as-a-Judge.&rdquo; 2025. <a href="https://arxiv.org/abs/2507.08794">arXiv:2507.08794</a></li>
+  <li id="ref-6">Zheng, X. et al. &ldquo;Cheating Automatic LLM Benchmarks: Null Models Achieve High Win Rates.&rdquo; 2024. <a href="https://arxiv.org/abs/2410.07137">arXiv:2410.07137</a></li>
+  <li id="ref-7">Lightman, H. et al. &ldquo;Let's Verify Step by Step.&rdquo; 2023. <a href="https://arxiv.org/abs/2305.20050">arXiv:2305.20050</a></li>
+  <li id="ref-8">Zhang, L. et al. &ldquo;Generative Verifiers: Reward Modeling as Next-Token Prediction.&rdquo; 2024. <a href="https://arxiv.org/abs/2408.15240">arXiv:2408.15240</a></li>
+  <li id="ref-9">Huang, Y. et al. &ldquo;From Accuracy to Robustness: A Study of Rule- and Model-based Verifiers in Mathematical Reasoning.&rdquo; 2025. <a href="https://arxiv.org/abs/2505.22203">arXiv:2505.22203</a></li>
+  <li id="ref-10">Jung, J., Brahman, F. &amp; Choi, Y. &ldquo;Trust or Escalate: LLM Judges with Provable Guarantees for Human Agreement.&rdquo; 2024. <a href="https://arxiv.org/abs/2407.18370">arXiv:2407.18370</a></li>
+  <li id="ref-11">Lù, X. H. et al. &ldquo;AgentRewardBench: Evaluating Automatic Evaluations of Web Agent Trajectories.&rdquo; 2025. <a href="https://arxiv.org/abs/2504.08942">arXiv:2504.08942</a></li>
+  <li id="ref-12">Khalifa, M. et al. &ldquo;Gaming the Judge: Unfaithful Chain-of-Thought Can Undermine Agent Evaluation.&rdquo; 2026. <a href="https://arxiv.org/abs/2601.14691">arXiv:2601.14691</a></li>
+  <li id="ref-13">Kambhampati, S. et al. &ldquo;LLMs Can't Plan, But Can Help Planning in LLM-Modulo Frameworks.&rdquo; ICML 2024. <a href="https://arxiv.org/abs/2402.01817">arXiv:2402.01817</a></li>
+  <li id="ref-14">Stechly, K., Valmeekam, K. &amp; Kambhampati, S. &ldquo;On the Self-Verification Limitations of Large Language Models on Reasoning and Planning Tasks.&rdquo; 2024. <a href="https://arxiv.org/abs/2402.08115">arXiv:2402.08115</a></li>
+  <li id="ref-15">Valmeekam, K., Marquez, M. &amp; Kambhampati, S. &ldquo;Can Large Language Models Really Improve by Self-critiquing Their Own Plans?&rdquo; 2023. <a href="https://arxiv.org/abs/2310.08118">arXiv:2310.08118</a></li>
+  <li id="ref-16">Xie, J. et al. &ldquo;TravelPlanner: A Benchmark for Real-World Planning with Language Agents.&rdquo; 2024. <a href="https://arxiv.org/abs/2402.01622">arXiv:2402.01622</a></li>
+  <li id="ref-17">Qi, J. et al. &ldquo;TREK: A Travel Reasoning and Evaluation Kit for LLM Agents in Complex Trip Planning.&rdquo; 2026. <a href="https://arxiv.org/abs/2607.26977">arXiv:2607.26977</a></li>
+  <li id="ref-18">Hao, Y. et al. &ldquo;Large Language Models Can Solve Real-World Planning Rigorously with Formal Verification Tools.&rdquo; 2024. <a href="https://arxiv.org/abs/2404.11891">arXiv:2404.11891</a></li>
+  <li id="ref-19">Liu, B. et al. &ldquo;LLM+P: Empowering Large Language Models with Optimal Planning Proficiency.&rdquo; 2023. <a href="https://arxiv.org/abs/2304.11477">arXiv:2304.11477</a></li>
+  <li id="ref-20">Wu, Y. et al. &ldquo;Verify, Repair, Repeat, or Stop? Robust Stopping for Noisy Verify-Repair Loops in LLM Agents.&rdquo; 2026. <a href="https://arxiv.org/abs/2607.17641">arXiv:2607.17641</a></li>
+  <li id="ref-21">Ray, J. &amp; Goyal, A. &ldquo;Structured Feedback Improves Repair in an LLM Agent Loop&rdquo; (VeriHarness). 2026. <a href="https://arxiv.org/abs/2607.14167">arXiv:2607.14167</a></li>
+  <li id="ref-22">Inan, H. et al. &ldquo;Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations.&rdquo; 2023. <a href="https://arxiv.org/abs/2312.06674">arXiv:2312.06674</a>; Chennabasappa, S. et al. &ldquo;LlamaFirewall: An open source guardrail system for building secure AI agents.&rdquo; 2025. <a href="https://arxiv.org/abs/2505.03574">arXiv:2505.03574</a></li>
+  <li id="ref-23">Wang, H., Poskitt, C. M. &amp; Sun, J. &ldquo;AgentSpec: Customizable Runtime Enforcement for Safe and Reliable LLM Agents.&rdquo; ICSE 2026. <a href="https://arxiv.org/abs/2503.18666">arXiv:2503.18666</a></li>
+  <li id="ref-24">Palumbo, N. et al. &ldquo;Formal Policy Enforcement for Agentic Systems&rdquo; (FORGE). 2026. <a href="https://arxiv.org/abs/2602.16708">arXiv:2602.16708</a></li>
+  <li id="ref-25">Shi, T. et al. &ldquo;Progent: Securing AI Agents with Privilege Control.&rdquo; 2025. <a href="https://arxiv.org/abs/2504.11703">arXiv:2504.11703</a></li>
+  <li id="ref-26">Li, Y. et al. &ldquo;VIGIL: Runtime Enforcement of Behavioral Specifications in AI Agent Skills.&rdquo; 2026. <a href="https://arxiv.org/abs/2606.26524">arXiv:2606.26524</a></li>
+  <li id="ref-27">Debenedetti, E. et al. &ldquo;Defeating Prompt Injections by Design&rdquo; (CaMeL). 2025. <a href="https://arxiv.org/abs/2503.18813">arXiv:2503.18813</a></li>
+  <li id="ref-28">Baker, B. et al. &ldquo;Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation.&rdquo; 2025. <a href="https://arxiv.org/abs/2503.11926">arXiv:2503.11926</a></li>
+  <li id="ref-29">Von Arx, S., Chan, L. &amp; Barnes, B. &ldquo;Recent Frontier Models Are Reward Hacking.&rdquo; METR blog, June 2025. <a href="https://metr.org/blog/2025-06-05-recent-reward-hacking">metr.org</a></li>
+  <li id="ref-30">Zhong, Z., Raghunathan, A. &amp; Carlini, N. &ldquo;ImpossibleBench: Measuring LLMs' Propensity of Exploiting Test Cases.&rdquo; 2025. <a href="https://arxiv.org/abs/2510.20270">arXiv:2510.20270</a></li>
+  <li id="ref-31">Chan, J. S. et al. &ldquo;MLE-bench: Evaluating Machine Learning Agents on Machine Learning Engineering.&rdquo; ICLR 2025. <a href="https://arxiv.org/abs/2410.07095">arXiv:2410.07095</a></li>
+  <li id="ref-32">Karpathy, A. &ldquo;autoresearch&rdquo; (program.md). GitHub, 2026. <a href="https://github.com/karpathy/autoresearch">github.com/karpathy/autoresearch</a></li>
+  <li id="ref-33">Qu, S., Wang, J. &amp; Law, K. &ldquo;A Category-Theoretic Approach to Neural-Symbolic Task Planning with Bidirectional Search.&rdquo; Findings of EMNLP 2025. <a href="https://aclanthology.org/2025.findings-emnlp.1157/">ACL Anthology</a></li>
+  <li id="ref-34">Qu, S. &ldquo;Teaching LLMs to Ask: Self-Querying Category-Theoretic Planning for Under-Specified Reasoning.&rdquo; 2026. <a href="https://arxiv.org/abs/2601.20014">arXiv:2601.20014</a></li>
+</ol>
+
+<h2 id="citation">Citation</h2>
+<p>Cited as: Qu, Shuhui. (Oct 2026). Checking what AI agents do: judges, verifiers and guardrails. Shuhui Qu's blog.
+https://shuhuiq.github.io/blog/review-checking-agents.html</p>
+<pre class="cite-block">@article{qu2026checkingagents,
+  title   = "Checking what AI agents do: judges, verifiers and guardrails",
+  author  = "Qu, Shuhui",
+  journal = "shuhuiq.github.io",
+  year    = "2026",
+  month   = "Oct",
+  url     = "https://shuhuiq.github.io/blog/review-checking-agents.html"
+}</pre>
+
+</div>
+</body>
+</html>

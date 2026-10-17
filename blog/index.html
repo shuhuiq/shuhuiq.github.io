@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog · Shuhui Qu</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+  <h1>Blog</h1>
+  <p class="meta">Notes on reinforcement learning, verifiers and evaluation.</p>
+  <ul class="postlist">
+    <li>
+      <span class="ico c-verify sm" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
+      <div>
+      <div class="date">October 2026 &middot; literature review</div>
+      <div class="title"><a href="review-checking-agents.html">Checking what AI agents do: judges, verifiers and guardrails</a></div>
+      <div class="sum">Literature review. LLM judges, learned verifiers, plan verifiers, runtime guardrails and agents gaming their evaluators &mdash; how each works, and where MORPHEUS differs.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-rung sm" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+      <div>
+      <div class="date">October 2026 &middot; literature review</div>
+      <div class="title"><a href="review-routing-cascades.html">Routing LLM calls: predict the model, or verify the answer?</a></div>
+      <div class="sum">Literature review. Routers that predict from the prompt rarely generalize; cascades that check the cheap answer depend on the signal &mdash; and where Rung differs.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
+      <div>
+      <div class="date">October 2026 &middot; literature review</div>
+      <div class="title"><a href="review-agent-logs-training.html">From agent logs to training: what the papers measure, and what they skip</a></div>
+      <div class="sum">Literature review. Trajectory fine-tuning, simulators, RL, training versus retrying and evaluation validity &mdash; and where trace2wm telemetry differs.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-verify sm" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
+      <div>
+      <div class="date">October 2026</div>
+      <div class="title"><a href="morpheus.html">MORPHEUS: checking what an AI agent does against what you asked</a></div>
+      <div class="sum">What it does (check, stop, fix, record), how it decides, where it came from, and what it still gets wrong.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-rung sm" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+      <div>
+      <div class="date">October 2026</div>
+      <div class="title"><a href="dont-predict-verify.html">Don't predict, verify: building a model router</a></div>
+      <div class="sum">Predicting the best model from the prompt recovered none of the available gain; climbing a price ladder on evidence did. The check that says &ldquo;escalate&rdquo; is the hard part.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-log"/></svg></span>
+      <div>
+      <div class="date">October 2026</div>
+      <div class="title"><a href="before-you-train-on-agent-logs.html">Before you train on your agent's logs</a></div>
+      <div class="sum">Seven mistakes a team can find in its logs before training, and why comparing steps decided 23 of 23 tasks where comparing outcomes could not.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-rl sm" aria-hidden="true"><svg><use href="../icons.svg#i-nope"/></svg></span>
+      <div>
+      <div class="date">October 2026</div>
+      <div class="title"><a href="rl-saying-not-possible.html">Can RL teach a model to say &ldquo;not possible&rdquo;?</a></div>
+      <div class="sum">Two small RL experiments. A reward that cannot check a refusal cannot teach one; a strong model was already honest, but a third of its proofs contained a false step.</div>
+      </div>
+    </li>
+    <li>
+      <span class="ico c-verify sm" aria-hidden="true"><svg><use href="../icons.svg#i-scale"/></svg></span>
+      <div>
+      <div class="date">October 2026</div>
+      <div class="title"><a href="judge-that-agrees-most.html">The judge that agrees most is not the safest</a></div>
+      <div class="sum">Nine graders, one frozen set. The grader with the highest agreement accepted half of the planted errors; the only graders that accepted none had some of the lowest agreement.</div>
+      </div>
+    </li>
+  </ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects · Shuhui Qu</title>
+<meta name="description" content="MORPHEUS.ai, Rung and trace2wm telemetry: verifiers, model routing and training-readiness telemetry for AI agents.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="./">Projects</a><a href="../blog/">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+  <h1>Projects</h1>
+  <p class="meta">Three products for teams that put AI agents to work: check what the agent does, pay less for the
+  answers, and know whether training it is worth the money.</p>
+
+  <section class="prod" id="morpheus">
+    <div class="prod-top"><span class="ico c-verify lg" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
+      <div><div class="prod-label">MORPHEUS.ai &middot; for teams that let AI agents plan and act</div>
+      <h2 class="prod-h">Know which of your requirements an agent breaks &mdash; before it acts.</h2></div>
+    </div>
+    <p class="prod-sub">MORPHEUS checks every step an AI agent plans or takes against the requirements you gave it,
+    and tells you, for each requirement, whether it is met, broken, or cannot be checked &mdash; with the evidence.</p>
+    <ul class="prod-list">
+      <li><b>Check.</b> Your requirements are kept across the whole conversation, and a verdict rests only on what
+      code can confirm &mdash; the plan's own &ldquo;total: within budget&rdquo; never counts. When it cannot tell, it
+      says so instead of guessing. <span class="proof">On a blind test it let none of 8 planted budget overruns through (2 flagged as
+      broken, 6 as cannot-check); the LLM judges let 2 to 8 of them through.</span></li>
+      <li><b>Stop.</b> Inside Claude Code, Codex and Cursor it blocks the tool call that would break a rule you set
+      &mdash; a new dependency, a force push, an edit to the file that computes your metric &mdash; and checks the
+      agent's &ldquo;done&rdquo; before you believe it. <span class="proof">Replayed on 4,750 real tool calls: 10
+      blocks, all correct.</span></li>
+      <li><b>Fix.</b> When a step breaks a requirement, it proposes alternatives at that step and re-checks them
+      before you see them.</li>
+      <li><b>Record.</b> For ML experiment loops, it turns a run into a record anyone can re-verify: a frozen
+      evaluator, the noise across seeds, and an audit for metric gaming.</li>
+    </ul>
+    <p class="prod-foot"><b>Where it came from:</b> a planning engine for science
+    (<i>Morphism-Oriented Reasoning with Provable, Honest, Epistemic Understanding for Science</i>) that builds a
+    knowledge graph from papers &mdash; 18,600+ actions from 665 documents, every one traced to its page &mdash;
+    plans over it, and accepts a plan only after a verifier passes it. Research: EMNLP Findings 2025 and four 2026
+    preprints. Write-ups: <a href="../blog/morpheus.html">what MORPHEUS is and does</a> &middot;
+    <a href="../blog/judge-that-agrees-most.html">the judge that agrees most is not the safest</a> &middot;
+    related work: <a href="../blog/review-checking-agents.html">judges, verifiers and guardrails</a>.</p>
+  </section>
+
+  <section class="prod" id="rung">
+    <div class="prod-top"><span class="ico c-rung lg" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+      <div><div class="prod-label">Rung &middot; for teams paying for LLM calls</div>
+      <h2 class="prod-h">Pay for the expensive model only when the cheap one is shown wrong.</h2></div>
+    </div>
+    <p class="prod-sub">One OpenAI-compatible model name. Behind it, Rung tries the cheapest capable model, checks
+    the answer, and escalates only on a verified failure, under a hard budget per task. Every response says who
+    answered, what each attempt cost, and whether anything checked it.</p>
+    <ul class="prod-list">
+      <li><b>No prediction.</b> Guessing the right model from the prompt recovered none of the available savings in
+      our tests; climbing on evidence did. <span class="proof">Ahead of every single model in 37 of 39
+      matched-spend comparisons on HumanEval+.</span></li>
+      <li><b>A check that needs nothing from you.</b> If you have tests, Rung uses them. If not, it asks the same model
+      three times and requires it to agree with itself. <span class="proof">0.78&ndash;0.98 correlation with
+      correctness, at about 3 % of one top-model call; an LLM grader came out worse than chance.</span></li>
+      <li><b>Routing by kind of task.</b> Your own traffic builds a table of cost per correct answer for each kind of
+      task, so the expensive model is used where it actually wins. <span class="proof">Its advantage was 58 points on
+      one category and 2 on another.</span></li>
+      <li><b>Drop-in.</b> Point your existing OpenAI client at it; nothing else changes.</li>
+    </ul>
+    <p class="prod-foot"><b>Status:</b> working and measured, not yet battle-tested. Write-up:
+    <a href="../blog/dont-predict-verify.html">Don't predict, verify</a> &middot; related work:
+    <a href="../blog/review-routing-cascades.html">routers and cascades</a>.</p>
+  </section>
+
+  <section class="prod" id="telemetry">
+    <div class="prod-top"><span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
+      <div><div class="prod-label">trace2wm telemetry &middot; for teams running AI agents</div>
+      <h2 class="prod-h">Before you train your agent, find out if it's worth it.</h2></div>
+    </div>
+    <p class="prod-sub">Drop in your agent's logs. A minute later you know whether training a smaller model would
+    beat simply letting the agent try again at the same cost, whether you have enough of the right data, and what to
+    record next.</p>
+    <ul class="prod-list">
+      <li><b>Train, or try again?</b> Two cards side by side: what retrying already gets you, measured on your own
+      log, and what training could get you, with the published results it is based on.</li>
+      <li><b>Do you have enough?</b> Which tasks have no example of success, which states are never reached, which
+      tools are never used &mdash; as a collection plan with sizes.</li>
+      <li><b>What to record.</b> The ten things a log needs before it can answer, and the ones yours is missing.</li>
+      <li><b>Honest by construction.</b> Every sentence points to a reading of your log or a cited paper, and it
+      says &ldquo;can't tell&rdquo; when the log cannot decide. It never promises that training will help, and no
+      training platform pays us, so the advice does not depend on which way you go.</li>
+    </ul>
+    <p class="prod-foot"><b>Status:</b> runs on your own computer, or on a hosted site for invited teams where your
+    log is deleted as soon as the report is made. Comparing a trained agent with the untrained one at the same cost is next. Write-up:
+    <a href="../blog/before-you-train-on-agent-logs.html">Before you train on your agent's logs</a> &middot; related
+    work: <a href="../blog/review-agent-logs-training.html">from agent logs to training</a>.</p>
+  </section>
+</div>
+
+</body>
+</html>

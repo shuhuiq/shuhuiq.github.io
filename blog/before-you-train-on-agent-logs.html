@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Before you train on your agent's logs · Shuhui Qu</title>
+<meta name="description" content="What trace2wm telemetry checks before a team spends money training on its agent's logs, and the mistakes it was built to catch.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-log"/></svg></span>
+<h1>Before you train on your agent's logs</h1>
+<div class="meta">October 2026</div>
+
+<p>A team has months of logs of its AI agent at work and wants to fine-tune or run RL on them. Finding out whether
+that will work by training costs money and weeks. I built <a href="../projects/#telemetry">trace2wm telemetry</a> to
+answer from the logs alone, before anything is trained: can a training environment and a reward be built from these
+recordings; what data to collect next; roughly what each post-training method can reach; and, after training,
+whether a claimed improvement is real.</p>
+
+<h3>How you use it</h3>
+
+<p>Drop in the logs you already have: OpenAI chat transcripts, OpenTelemetry GenAI traces, Arize Phoenix span
+tables, ToolTalk or ATIF trajectories, or a spreadsheet with one tool call per row. Emails, phone numbers and card
+numbers are hidden as soon as the log is read. It runs on your own computer, where nothing is sent anywhere, or on a
+hosted site for invited teams, where the uploaded log is deleted as soon as the report is made.</p>
+
+<p>A minute later you get two pages. The first is for the people who run the agent: it opens with one verdict
+&mdash; &ldquo;Fix the logging before training the AI&rdquo;, or &ldquo;Trying again already works well&rdquo;
+&mdash; and then the checks behind it, in plain words. The second is for the engineer, with every number, the rule
+that produced it and the files it was read from. Another agent can ask the same questions through MCP.</p>
+
+<h3>The mistakes it was built to catch</h3>
+
+<p>Every check in it exists because the mistake behind it happened in my own trace2wm project and was found
+late:</p>
+<ul>
+  <li>A corpus that was 38.5 % empty episodes looked fine by row count.</li>
+  <li>29 of 77 training tasks had no demonstration at all.</li>
+  <li>Evaluation rendered prompts differently from training &mdash; five times.</li>
+  <li>The only fine-tuning gain was on the 6 tasks the model had trained on; nothing was evaluated on held-out
+  tasks.</li>
+  <li>93 % of the tokens the fine-tuning loss was computed on were not actions.</li>
+  <li>22 of 75 final states the simulator produced were rejected by the real scorer.</li>
+  <li>Checkpoints were picked by a validation loss computed on a different random 25 examples each time.</li>
+</ul>
+<p>None of these needs a GPU to find. Each is a count over the logs, the configuration or the evaluation files, and
+each blocks a specific next step until it is fixed.</p>
+
+<h3>Seven stages, each with gates</h3>
+
+<p>The report reads the corpus in seven stages &mdash; intake, corpus health, coverage, environment fidelity,
+learnability, training health, outcome. Each stage has metrics, gates that say what they block, and actions computed
+by rules over the metrics. It is read-only (every input file is hashed before and after), runs on a CPU, and makes no
+API calls. The output is a JSON document with the hash of every file it read, so anyone can later ask whether a saved
+report still describes the data and the code.</p>
+
+<h3>When outcomes are too sparse, compare the steps</h3>
+
+<p>One question is whether a simulator behaves like the real system, task by task; if it does not, RL in the
+simulator teaches the wrong thing. The obvious test compares success rates of the same policy in both environments.
+It mostly cannot decide: with 8 runs on each side, a task needs at least 5 successful runs before <i>any</i>
+arrangement of them could be significant, and most tasks never succeed at all.</p>
+
+<p>So the report compares steps instead. It replays the saved trajectories through both environments and, for each
+task, counts the tool calls one environment ran and the other refused (an exact paired test, corrected for the number
+of tasks). On trace2wm's corpus that gave 20,814 paired calls and a verdict on 23 of 23 tasks, where the success-rate
+test left 9 undecided. Each disagreement also says why &mdash; an argument the real tool does not accept, a refusal
+the simulator has no check for, a state the real scorer will not read &mdash; which points at the file where the fix
+belongs.</p>
+
+<h3>Forecasts that admit what they do not know</h3>
+
+<p>The report says what each method &mdash; fine-tuning, rejection sampling, RL in the simulator, test-time methods
+&mdash; might reach, always as a range and never as a single number, with a tag saying whether it was measured,
+extrapolated or taken from published work. An end that cannot be estimated is drawn as unknown, never as zero.</p>
+
+<p>The page for the people who run the agent goes further: no sentence on it is written by hand or by a model. Each
+one is a phrase with numbers from their log filled in, chosen by written rules whose limits they can see and change.
+And their report never carries my project's conclusions: a customer is owed readings of their own files.</p>
+
+<h3>The comparison I have not seen anyone make</h3>
+
+<p>Platforms that check a training run compare the trained model with the one in production. I have not found one
+that compares it with the untrained agent simply trying again at the same cost &mdash; and retrying is often what
+you should do. Today the page shows two cards side by side: <i>if the agent tries again</i>, measured on the
+customer's own log (tasks done after one try and after k tries, and what the extra tries cost), and <i>if you train
+a small model now</i>, a rough estimate from published results, marked low-reliability because those results go
+both ways &mdash; on the same ~2,000 starting examples, one study's 8B model got worse while its 14B model got
+better. Measuring the comparison directly, from a log before training and a log after, at the same spend, is the
+next piece; it is designed and not yet built.</p>
+
+<p class="caveat">Limits: the checks were built on trace2wm's own corpora and mistakes; another team's logs will
+break assumptions mine did not. The forecasts from published work are deliberately labelled low-reliability.</p>
+
+</div>
+</body>
+</html>

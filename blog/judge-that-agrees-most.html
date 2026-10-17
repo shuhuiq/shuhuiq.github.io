@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The judge that agrees most is not the safest · Shuhui Qu</title>
+<meta name="description" content="Nine graders on one frozen set of agent plans: agreement with the labels ranked them almost opposite to the error that matters.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-verify lg" aria-hidden="true"><svg><use href="../icons.svg#i-scale"/></svg></span>
+<h1>The judge that agrees most is not the safest</h1>
+<div class="meta">October 2026</div>
+
+<p class="caveat">This is the measurement behind <a href="morpheus.html">MORPHEUS</a>. For what MORPHEUS is and
+does, start there.</p>
+
+<p>When an LLM grades an agent's work, the usual test of the grader is agreement: how often its verdicts match the
+reference labels. I measured nine graders on one held-out set of agent plans, and agreement did not tell me which
+one was safe: the grader with the highest agreement accepted half of the errors I planted, and the only graders that
+accepted none &mdash; two versions of my own verifier &mdash; had some of the lowest agreement. The error that matters most is telling a user that a plan meets
+their limit when it does not. That error is invisible to the user, and if the grader is used as a reward, it is exactly the shortcut a policy
+would learn.</p>
+
+<h3>The set</h3>
+
+<p>Twenty planning tasks (11 in English, 9 in Chinese: parties, trips, study plans, team offsites), with plans
+written by gpt-5-mini. Each limit the user stated &mdash; a budget, a deadline, something to leave out &mdash;
+got a label: met, broken, or cannot tell. 142 labels in total. The edge cases were written down before labelling:
+&ldquo;under 45 minutes&rdquo; is broken by exactly 45; &ldquo;at most&rdquo; includes the limit; when a plan can be
+read two ways (a price range, an optional item), a verdict must hold under every reading, otherwise it is
+&ldquo;cannot tell&rdquo;; and the plan's own conclusions (&ldquo;total: $320, within budget&rdquo;) are not
+evidence. Every grader was measured once, and nothing was changed after the measurement.</p>
+
+<p>On top of the natural plans I planted one error per task in the 8 tasks with a budget: an extra cost line, worth
+60 % of the budget, after the plan's last money line. The real total is then over budget, while the plan's own
+written total still says it is under.</p>
+
+<h3>Results</h3>
+
+<p>Six of the nine graders are shown; the other three are an earlier version of my verifier, the verifier with its
+second model switched off, and the typed-answer grader without abstention.</p>
+
+<table>
+  <tr><th>grader</th><th>agrees with the labels</th><th>says &ldquo;met&rdquo; for a broken limit</th><th>accepts the planted overrun</th><th>cost per task</th></tr>
+  <tr><td>gpt-4.1-mini, as a judge</td><td>72 %</td><td>6</td><td><b>8 / 8</b></td><td>$0.003</td></tr>
+  <tr><td>gpt-4.1, as a judge</td><td>73 %</td><td>6</td><td><b>8 / 8</b></td><td>$0.013</td></tr>
+  <tr><td>gpt-5-mini (reasoning), as a judge</td><td>80 %</td><td>0</td><td>2 / 8</td><td>$0.008</td></tr>
+  <tr><td>Inkling-Small (reasoning), as a judge</td><td><b>83 %</b></td><td>0</td><td>4 / 8</td><td>$0.012</td></tr>
+  <tr><td>typed answers with a confidence (OpenAI Decisions API), abstaining below 0.5</td><td>41 %</td><td>0</td><td>1 / 8</td><td>$0.0005</td></tr>
+  <tr><td>my verifier (MORPHEUS): a model reads the plan, code checks sums, times and quotes, a second model confirms the reading</td><td>44 %</td><td>0</td><td><b>0 / 8</b></td><td>$0.09</td></tr>
+</table>
+
+<p><b>The cheap judges agree a lot and fail in one direction.</b> gpt-4.1 and gpt-4.1-mini each called six broken
+limits &ldquo;met&rdquo;, all on rules the instruction sheet spelled out: a 45-minute run for &ldquo;under 45
+minutes&rdquo;, exactly 3 hours for &ldquo;under 3 hours&rdquo;, a per-sitting limit checked on weekdays only. And they
+accepted all eight planted overruns, with confident arithmetic that stopped one line short: &ldquo;itemized budget
+totals $320&rdquo;.</p>
+
+<p><b>Reasoning judges are much better, and still trust the plan.</b> gpt-5-mini and Inkling-Small made no such
+error on the natural plans and had the highest agreement of all. On the planted overruns they still accepted two and
+four of eight: they added up the items, met the plan's own total, and stopped there.</p>
+
+<p><b>The verifier never accepted a broken limit, and pays for it in &ldquo;cannot tell&rdquo;.</b> It does not take
+the plan's word for any total; it adds the lines itself. The price is coverage: on limits that were actually met it
+said &ldquo;cannot tell&rdquo; 39 % of the time, and it confirmed none of the 11 honest budgets, because totals with
+buffers, options and per-person prices do not settle into one number.</p>
+
+<p>Agreement rewards a grader that commits. It cannot see which way the grader commits. The two cheap judges agreed
+with each other on 97 % of rows &mdash; more than either agreed with the labels &mdash; so agreement between judges
+is not evidence either.</p>
+
+<h3>Can the verifier's verdicts teach a small judge?</h3>
+
+<p>I fine-tuned Qwen3-8B with LoRA on 208 examples built from the verifier's verdicts and development labels (about
+$1 per run). Accepted planted overruns fell from 6 of 8 to 1 of 8, and from 7 of 8 to 1 of 8 for a cost line worded
+in a way that never appeared in training. The strict-boundary rule did not transfer: the tuned model still accepted
+45 minutes for &ldquo;under 45 minutes&rdquo;.</p>
+
+<p>The same data on Inkling-Small taught a different lesson. The training targets were verdicts without reasoning,
+so the tuned model stopped reasoning. Planted overruns accepted fell to 0 of 8, but agreement dropped from 83 % to
+61 %, and it called broken limits &ldquo;met&rdquo; 4 times, where the base model had done so
+0 times. What the data taught carried over; how the
+data was formatted decided what was lost.</p>
+
+<h3>What I would tell anyone grading agents</h3>
+<ol>
+  <li><b>Report the errors by direction.</b> &ldquo;Said met, was broken&rdquo; and &ldquo;said broken, was met&rdquo;
+  have different costs, and one agreement number hides both.</li>
+  <li><b>Plant errors you know are there.</b> Natural plans did not separate the reasoning judges from the verifier;
+  one planted line did.</li>
+  <li><b>Never let the work supply its own evidence.</b> A plan's own total, a test's own log, a proof's own
+  &ldquo;therefore&rdquo; &mdash; the grader should recompute it.</li>
+  <li><b>Choose what you pay for safety.</b> &ldquo;Cannot tell&rdquo; is a cost the user sees; a wrong
+  &ldquo;met&rdquo; is a cost the user does not see.</li>
+</ol>
+
+<p class="caveat">Limits: 20 tasks and 142 labels; the labels come from two independent model labellers (Claude Opus
+and Claude Sonnet, 95.7 % agreement) and an adjudicating model, and a human check of a sample was planned but not yet
+done; one measurement per grader; the Decisions API grader was given the list of limits, while the others had to find
+them in the task.</p>
+
+</div>
+</body>
+</html>

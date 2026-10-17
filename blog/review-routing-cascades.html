@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routing LLM calls: predict the model, or verify the answer? · Shuhui Qu</title>
+<meta name="description" content="A review of LLM routers and model cascades — how each decides which model answers, what generalizes, and where Rung differs.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-rung lg" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+<h1>Routing LLM calls: predict the model, or verify the answer?</h1>
+<div class="byline">Date: October 2026 &nbsp;|&nbsp; Estimated reading time: 8 min &nbsp;|&nbsp; Author: Shuhui Qu</div>
+
+<p>The same request can cost a hundred times more on one model than on another, and the expensive model is not always
+the one that gets it right. Two strategies try to pay only for what a request needs. A <b>router</b> decides
+<i>before</i> the call: it reads the prompt and predicts which model should answer. A <b>cascade</b> decides
+<i>after</i>: it lets a cheap model answer first, checks the answer, and calls a stronger model only if the check
+fails. This post reviews both families in the 2023&ndash;2026 literature, what generalizes and what does not, and
+where my gateway <a href="../projects/#rung">Rung</a> differs. (For how Rung is built and used, see
+<a href="dont-predict-verify.html">this post</a>.)</p>
+
+<details class="toc" open><summary>Table of Contents</summary>
+<ol>
+  <li><a href="#routers">Routers: predict the model from the prompt</a></li>
+  <li><a href="#generalize">Do routers generalize?</a></li>
+  <li><a href="#cascades">Cascades: let the cheap model try, then check</a>
+    <ol><li><a href="#signals">Which signal decides escalation</a></li><li><a href="#code">Cascades for code and agents</a></li></ol></li>
+  <li><a href="#theory">One theory for both</a></li>
+  <li><a href="#how-we-differ">Where Rung differs</a></li>
+  <li><a href="#ahead">Where the literature is ahead</a></li>
+  <li><a href="#references">References</a></li>
+</ol>
+</details>
+
+<h2 id="routers">Routers: predict the model from the prompt</h2>
+
+<p>A router is a classifier over prompts. It is trained on records of which model did well on which request, and at
+run time it maps a new prompt to a model, usually with a threshold that trades cost against quality.</p>
+<ul>
+  <li><b>Preference-trained routers.</b> RouteLLM trains strong-versus-weak routers on Chatbot Arena preferences and
+  routes when the predicted win probability of the weak model is high enough; it reports 3.66&times; cost savings at
+  95 % of GPT-4's quality on MT Bench <a class="cite" href="#ref-1">(Ong et al. 2024)</a>. Hybrid LLM predicts the
+  quality gap between a small and a large model and makes up to 40 % fewer calls to the large one
+  <a class="cite" href="#ref-2">(Ding et al. 2024)</a>.</li>
+  <li><b>Bandits and graphs.</b> MixLLM's contextual bandit reaches 97.25 % of GPT-4's quality at 24.18 % of the cost
+  <a class="cite" href="#ref-3">(Wang et al. 2025)</a>; GraphRouter predicts effect and cost as edges in a graph of
+  tasks, queries and models <a class="cite" href="#ref-4">(Feng et al. 2024)</a>; BaRP trains under the partial
+  feedback a deployed router actually gets <a class="cite" href="#ref-5">(Wang et al. 2025)</a>.</li>
+  <li><b>Policies and lookups.</b> Arch-Router maps queries to routes the operator defines in words
+  <a class="cite" href="#ref-6">(Tran et al. 2025)</a>, and a well-tuned k-nearest-neighbour router over embeddings
+  matches or beats learned routers <a class="cite" href="#ref-7">(Li 2025)</a>.</li>
+</ul>
+<p>The best-known figures of this family (RouteLLM, FrugalGPT, Hybrid LLM) are not under licenses that allow
+reproduction; see Fig. 1 of <a href="https://arxiv.org/abs/2406.18665">RouteLLM</a> for its cost&ndash;quality curves.</p>
+
+<h2 id="generalize">Do routers generalize?</h2>
+
+<p>Independent benchmarks are consistently sceptical. On RouterBench's 405,000 outcomes, &ldquo;none of the routing
+algorithms significantly outperform the baseline Zero router&rdquo; <a class="cite" href="#ref-8">(Hu et al. 2024)</a>.
+On LLMRouterBench &mdash; over 400,000 instances, 33 models &mdash; recent methods and the commercial OpenRouter
+&ldquo;do not outperform a simple baseline (the Best Single model)&rdquo; <a class="cite" href="#ref-9">(Li et al.
+2026)</a>. RouterArena ranks Not Diamond 12th, largely because it picks expensive models
+<a class="cite" href="#ref-10">(Lu et al. 2025)</a>. RouteLLM's own Arena-trained routers fall to the level of a random
+router on MMLU, which the authors attribute to MMLU being out of distribution <a class="cite" href="#ref-1">(Ong et al.
+2024)</a>. Routers conditioned on a budget collapse onto the most expensive model as the budget grows
+<a class="cite" href="#ref-11">(Lai &amp; Ye 2026)</a>.</p>
+
+<p>Why? Agent-as-a-Router traces the failure to an &ldquo;information deficit&rdquo; in the prompt
+<a class="cite" href="#ref-12">(Zhou et al. 2026)</a>, and SWE-Router argues that prompt-only routing has an error floor
+it cannot get below, because &ldquo;a similar issue can hide either a localized typo or a multi-module refactor&rdquo;
+<a class="cite" href="#ref-13">(Son et al. 2026)</a>. There is counter-evidence &mdash; BaRP and RouterEval report
+routers that generalize <a class="cite" href="#ref-5">(Wang et al. 2025;</a> <a class="cite" href="#ref-14">Huang et al.
+2025)</a> &mdash; but it relies on feedback gathered during deployment, in-domain data, or a shift in the pool of models
+rather than in the tasks.</p>
+
+<h2 id="cascades">Cascades: let the cheap model try, then check</h2>
+
+<h3 id="signals">Which signal decides escalation</h3>
+
+<p>A cascade needs a <b>signal</b> computed from the cheap model's answer that says &ldquo;this is probably wrong&rdquo;.
+The literature has tried most of the obvious ones:</p>
+
+<table>
+  <tr><th>signal</th><th>how it works</th><th>reported result</th></tr>
+  <tr><td>a learned answer scorer</td><td>FrugalGPT learns a sequence of APIs and a scorer that stops the cascade
+  <a class="cite" href="#ref-15">(Chen et al. 2023)</a></td><td>up to 98 % cost cut at GPT-4 accuracy</td></tr>
+  <tr><td>self-verification + a decision model</td><td>AutoMix has the small model check its own answer against the
+  context, and a POMDP meta-verifier decides, because &ldquo;self-verification can be noisy&rdquo;
+  <a class="cite" href="#ref-16">(Aggarwal et al. 2023)</a></td><td>over 50 % cost cut</td></tr>
+  <tr><td>answer consistency</td><td>escalate when the cheap model's sampled answers disagree
+  <a class="cite" href="#ref-17">(Yue et al. 2023)</a>, building on self-consistency
+  <a class="cite" href="#ref-18">(Wang et al. 2022)</a></td><td>GPT-4 accuracy at 40 % of its cost</td></tr>
+  <tr><td>token-level uncertainty</td><td>quantiles of per-token uncertainty feed a learned deferral rule
+  <a class="cite" href="#ref-19">(Gupta et al. 2024)</a></td><td>beats sequence-probability deferral</td></tr>
+  <tr><td>probability margin</td><td>only the small model's margin between top answers decides
+  <a class="cite" href="#ref-20">(Ramírez et al. 2024)</a></td><td>best in 25 of 27 setups</td></tr>
+</table>
+
+<p>What does <i>not</i> work well as a gate is another model's opinion. Across 26 judges, CodeJudgeBench found
+&ldquo;significant randomness&rdquo; and sensitivity to the order answers are shown <a class="cite" href="#ref-21">(Jiang
+et al. 2025)</a>, and asking a model to correct itself can make answers worse <a class="cite" href="#ref-22">(Huang et
+al. 2023)</a>.</p>
+
+<h3 id="code">Cascades for code and agents</h3>
+
+<p>In code, the strongest cascades use cheap, objective evidence. In Model Cascading for Code, each model in a
+size-ordered family writes solutions <i>and</i> tests for them; the cascade climbs to the next model only when the best
+solution passes too few of the tests, cutting cost by 26 % on average and up to 70 %
+<a class="cite" href="#ref-23">(Chen et al. 2024)</a>. EcoAssistant runs the code and backs off from GPT-3.5-turbo to
+GPT-4 &ldquo;only when the current one fails&rdquo;, beating GPT-4 by 10 points of success at under half its cost
+<a class="cite" href="#ref-24">(Zhang et al. 2023)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/model-cascading-code-pipeline.svg" alt="Model cascading for code: each model writes solutions and tests; escalate if the score is below a threshold">
+  <figcaption><b>Fig. 1.</b> Model Cascading for Code: each model in the family generates solutions and its own tests;
+  the cascade moves to a larger model only when the best solution&ndash;test score falls below a threshold. (Image
+  source: <a href="https://arxiv.org/abs/2405.15842">Chen, Zhu, Dolan-Gavitt, Shafique &amp; Garg 2024</a>, pipeline
+  figure, arXiv:2405.15842v2; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>The closest relative to Rung in agentic coding is <b>SWE-Router</b>. A weak model takes a few exploratory turns on
+the task; a 7B value model reads that partial trajectory and predicts whether the weak model will succeed; if not,
+the task goes to a stronger model. It reaches a routing AUC of 0.780 on SWE-bench Verified, 15.3 points above the
+prompt-only baseline, and the authors prove that conditioning on the trajectory never hurts
+<a class="cite" href="#ref-13">(Son et al. 2026)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/swe-router-fig1.png" alt="SWE-Router: weak model exploratory turns, value head, continue or escalate">
+  <figcaption><b>Fig. 2.</b> SWE-Router reads the cheap model's first turns with a learned value head and decides whether
+  to continue or escalate. (Image source: <a href="https://arxiv.org/abs/2607.00053">Son et al. 2026</a>, Fig. 1,
+  arXiv:2607.00053v1; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<h2 id="theory">One theory for both</h2>
+
+<p>Dekoninck et al. unify routing and cascading as &ldquo;cascade routing&rdquo; and prove which strategies are optimal.
+Their conclusion is the one that matters for practice: everything rests on the quality estimate, and &ldquo;for
+cascading, robust post-hoc quality estimation &hellip; is critical&rdquo; <a class="cite" href="#ref-25">(Dekoninck et al.
+2024)</a>. A router lives or dies by what the prompt reveals; a cascade, by what its check can see in the answer.</p>
+
+<h2 id="how-we-differ">Where Rung differs</h2>
+
+<p>Rung is a cascade: an OpenAI-compatible gateway that tries the cheapest model, checks the answer, and escalates only
+on a verified failure. Its own measurements line up with the literature above. Predicting the best model from the
+prompt &mdash; with summaries, full prompts, TF-IDF, embeddings or a fine-tuned small model, tested with
+leave-one-repository-out splits and permutation baselines &mdash; never beat a policy that predicts nothing, and on 6,891
+(task, configuration) cells from an agentic-coding corpus it recovered none of the available gain (our measurement).
+That is the RouterBench result again, in agentic coding and under a stricter shift test. Five things together set Rung
+apart; to our knowledge no reviewed paper has all five:</p>
+
+<div class="diff">
+<ul>
+  <li><b>Verified escalation under a hard cap per task.</b> FrugalGPT's budget is a total over a dataset; RouteLLM and
+  Hybrid LLM expose thresholds. Rung escalates only when a check shows the answer wrong, and never spends more than the
+  task's budget.</li>
+  <li><b>Gates compared head to head on the same cells.</b> On 404 (task, model) cells: executed tests correlated 0.85
+  with actually being correct; the same model sampled three times and required to agree correlated 0.78&ndash;0.98, for
+  about 3 % of one top-model call; a same-tier LLM judge was negatively correlated &mdash; it preferred fluent
+  fabrications. With two samples instead of three, consistency fell to 0.00: two answers can split one against one,
+  with no majority (our measurement). We have not seen that collapse reported elsewhere.</li>
+  <li><b>Route by kind of task, from a table the operator can read.</b> The cost per correct answer differed 163&times;
+  across models, and the expensive model's advantage was 58 points on one task category and 2 on another (our
+  measurement). Rung looks up the category in a table built offline from the operator's own traffic &mdash; close in
+  spirit to Arch-Router's policies and Agent-as-a-Router's per-dimension lookup, which already reaches about 83 % of the
+  oracle &mdash; but auditable rather than learned.</li>
+  <li><b>A record of every attempt in every response.</b> Each response lists every attempt, what it cost and whether it
+  was verified; papers report aggregate curves.</li>
+  <li><b>Matched-spend comparisons.</b> The ladder beat every single model in 37 of 39 comparisons at the same spend on
+  HumanEval+ (our measurement) &mdash; a stricter framing than an area under a cost&ndash;quality curve.</li>
+</ul>
+</div>
+
+<h2 id="ahead">Where the literature is ahead</h2>
+<ul>
+  <li><b>Breadth.</b> Rung's evidence is 164 HumanEval+ tasks and one agentic-coding corpus. The benchmarks above have
+  hundreds of thousands to two hundred million records.</li>
+  <li><b>Theory.</b> Cascade routing proves optimal strategies; SWE-Router proves the value of reading the trajectory and
+  tests it on all 500 tasks of SWE-bench Verified.</li>
+  <li><b>Learned routers that help.</b> Where the mix of tasks is stable, RouteLLM and MixLLM do save money; Rung's null
+  result is about predicting across a shift.</li>
+  <li><b>Learning from the trajectory.</b> SWE-Router reads intermediate evidence as Rung does, with a learned value
+  model instead of a check; for agent tasks without tests, that may reach places a consistency gate cannot.</li>
+  <li><b>Comparisons we cannot make.</b> No paper reports a cost-per-correct spread to compare with Rung's 163&times;, and
+  commercial gateways publish no peer-reviewed description of their escalation logic, budgets or audit records.</li>
+</ul>
+
+<h2 id="references">References</h2>
+<ol class="refs">
+  <li id="ref-1">Ong, I. et al. &ldquo;RouteLLM: Learning to Route LLMs with Preference Data.&rdquo; 2024. <a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></li>
+  <li id="ref-2">Ding, D. et al. &ldquo;Hybrid LLM: Cost-Efficient and Quality-Aware Query Routing.&rdquo; 2024. <a href="https://arxiv.org/abs/2404.14618">arXiv:2404.14618</a></li>
+  <li id="ref-3">Wang, X. et al. &ldquo;MixLLM: Dynamic Routing in Mixed Large Language Models.&rdquo; 2025. <a href="https://arxiv.org/abs/2502.18482">arXiv:2502.18482</a></li>
+  <li id="ref-4">Feng, T. et al. &ldquo;GraphRouter: A Graph-based Router for LLM Selections.&rdquo; 2024. <a href="https://arxiv.org/abs/2410.03834">arXiv:2410.03834</a></li>
+  <li id="ref-5">Wang, W. et al. &ldquo;Learning to Route LLMs from Bandit Feedback: One Policy, Many Trade-offs&rdquo; (BaRP). 2025. <a href="https://arxiv.org/abs/2510.07429">arXiv:2510.07429</a></li>
+  <li id="ref-6">Tran, C. et al. &ldquo;Arch-Router: Aligning LLM Routing with Human Preferences.&rdquo; 2025. <a href="https://arxiv.org/abs/2506.16655">arXiv:2506.16655</a></li>
+  <li id="ref-7">Li. &ldquo;Rethinking Predictive Modeling for LLM Routing: When Simple kNN Beats Complex Learned Routers.&rdquo; 2025. <a href="https://arxiv.org/abs/2505.12601">arXiv:2505.12601</a></li>
+  <li id="ref-8">Hu, Q. J. et al. &ldquo;RouterBench: A Benchmark for Multi-LLM Routing System.&rdquo; 2024. <a href="https://arxiv.org/abs/2403.12031">arXiv:2403.12031</a></li>
+  <li id="ref-9">Li, H. et al. LLMRouterBench. 2026. <a href="https://arxiv.org/abs/2601.07206">arXiv:2601.07206</a></li>
+  <li id="ref-10">Lu, Y. et al. RouterArena. 2025. <a href="https://arxiv.org/abs/2510.00202">arXiv:2510.00202</a></li>
+  <li id="ref-11">Lai, G. &amp; Ye, H.-J. &ldquo;When Routing Collapses: On the Degenerate Convergence of LLM Routers.&rdquo; 2026. <a href="https://arxiv.org/abs/2602.03478">arXiv:2602.03478</a></li>
+  <li id="ref-12">Zhou, P. et al. &ldquo;Agent-as-a-Router: Agentic Model Routing for Coding Tasks.&rdquo; 2026. <a href="https://arxiv.org/abs/2606.22902">arXiv:2606.22902</a></li>
+  <li id="ref-13">Son, S. et al. &ldquo;SWE-Router: Routing in Multi-turn Agentic Software Engineering Tasks.&rdquo; 2026. <a href="https://arxiv.org/abs/2607.00053">arXiv:2607.00053</a></li>
+  <li id="ref-14">Huang, Z. et al. RouterEval. 2025. <a href="https://arxiv.org/abs/2503.10657">arXiv:2503.10657</a></li>
+  <li id="ref-15">Chen, L., Zaharia, M. &amp; Zou, J. &ldquo;FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance.&rdquo; 2023. <a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></li>
+  <li id="ref-16">Aggarwal, P. et al. &ldquo;AutoMix: Automatically Mixing Language Models.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.12963">arXiv:2310.12963</a></li>
+  <li id="ref-17">Yue, M. et al. &ldquo;Large Language Model Cascades with Mixture of Thoughts Representations for Cost-efficient Reasoning.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.03094">arXiv:2310.03094</a></li>
+  <li id="ref-18">Wang, X. et al. &ldquo;Self-Consistency Improves Chain of Thought Reasoning in Language Models.&rdquo; 2022. <a href="https://arxiv.org/abs/2203.11171">arXiv:2203.11171</a></li>
+  <li id="ref-19">Gupta, N. et al. &ldquo;Language Model Cascades: Token-level Uncertainty and Beyond.&rdquo; 2024. <a href="https://arxiv.org/abs/2404.10136">arXiv:2404.10136</a></li>
+  <li id="ref-20">Ramírez, G. et al. &ldquo;Optimising Calls to Large Language Models with Uncertainty-Based Two-Tier Selection.&rdquo; 2024. <a href="https://arxiv.org/abs/2405.02134">arXiv:2405.02134</a></li>
+  <li id="ref-21">Jiang, H. et al. &ldquo;CodeJudgeBench: Benchmarking LLM-as-a-Judge for Coding Tasks.&rdquo; 2025. <a href="https://arxiv.org/abs/2507.10535">arXiv:2507.10535</a></li>
+  <li id="ref-22">Huang, J. et al. &ldquo;Large Language Models Cannot Self-Correct Reasoning Yet.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.01798">arXiv:2310.01798</a></li>
+  <li id="ref-23">Chen, B., Zhu, M., Dolan-Gavitt, B., Shafique, M. &amp; Garg, S. &ldquo;Model Cascading for Code: A Cascaded Black-Box Multi-Model Framework for Cost-Efficient Code Completion with Self-Testing.&rdquo; 2024. <a href="https://arxiv.org/abs/2405.15842">arXiv:2405.15842</a></li>
+  <li id="ref-24">Zhang, J. et al. &ldquo;EcoAssistant: Using LLM Assistant More Affordably and Accurately.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.03046">arXiv:2310.03046</a></li>
+  <li id="ref-25">Dekoninck, J. et al. &ldquo;A Unified Approach to Routing and Cascading for LLMs.&rdquo; 2024. <a href="https://arxiv.org/abs/2410.10347">arXiv:2410.10347</a></li>
+</ol>
+
+<h2 id="citation">Citation</h2>
+<p>Cited as: Qu, Shuhui. (Oct 2026). Routing LLM calls: predict the model, or verify the answer? Shuhui Qu's blog.
+https://shuhuiq.github.io/blog/review-routing-cascades.html</p>
+<pre class="cite-block">@article{qu2026routingcascades,
+  title   = "Routing LLM calls: predict the model, or verify the answer?",
+  author  = "Qu, Shuhui",
+  journal = "shuhuiq.github.io",
+  year    = "2026",
+  month   = "Oct",
+  url     = "https://shuhuiq.github.io/blog/review-routing-cascades.html"
+}</pre>
+
+</div>
+</body>
+</html>

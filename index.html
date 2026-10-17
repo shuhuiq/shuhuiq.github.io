@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shuhui Qu</title>
+<meta name="description" content="Shuhui Qu — reinforcement learning and LLM agents whose answers can be checked.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="./">Shuhui Qu</a>
+    <span class="navlinks"><a href="./">Home</a><a href="projects/">Projects</a><a href="blog/">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container" id="dhead">
+  <div class="photo">
+    <img src="photo.png" alt="Shuhui Qu" onerror="this.style.display='none'">
+    <span class="initials">SQ</span>
+  </div>
+  <div class="intro">
+    <h1>Shuhui Qu</h1>
+    <h2>I like to build AI agents whose answers can be checked.</h2>
+    <div class="links">
+      <a href="mailto:shuhuiq@stanford.edu" title="Email" aria-label="Email">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </a>
+      <a href="https://scholar.google.com/citations?user=J_Ru5MgAAAAJ" title="Google Scholar" aria-label="Google Scholar">
+        <svg viewBox="0 0 24 24"><path d="M12 3L1 9.5l11 6.5 9-5.3V17h2V9.5z" fill="currentColor"/><path d="M5.5 13.2V17c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3v-3.8L12 17z" fill="currentColor"/></svg>
+      </a>
+      <a href="https://github.com/shuhuiq" title="GitHub" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.7s.8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<div class="container" id="story">
+  <div class="sectitle">my story</div>
+  <p>Most of my work comes back to one question: when can a system act on the signal it is given? In my PhD I trained
+  multi-agent reinforcement learning policies to schedule large stochastic production networks, and at Samsung Display
+  I shipped one &mdash; a scheduler for lines with hundreds of machines, where a reward or a constraint that is slightly
+  wrong costs real money. Six of my patent applications are about exactly this: reweighting rewards, adapting a policy to a new
+  reward, and letting a safety policy step in.</p>
+  <p>With LLM agents the question comes back in a harder form. Where a simulator or a design-rule checker can score the
+  outcome, as in the chip-design environments my team builds, the reward can be trusted. Most agent tasks can only be
+  partly checked, and the usual answer is to ask another model. In my own measurements, the LLM judges that agreed most
+  with human labels still accepted plans that broke the user's budget &mdash; a shortcut an RL policy could learn to
+  exploit. So I build verifiers that pass only what code can confirm (arithmetic, dates, quoted text) and say
+  &ldquo;cannot verify&rdquo; otherwise.</p>
+  <p>The other thing I have learned is that a number is only as good as the way it was measured. I freeze held-out sets,
+  write down what counts as a result before the run, measure once, and report the runs that did not work.</p>
+</div>
+
+<div class="container" id="focus">
+  <div class="cards">
+    <div class="card">
+      <span class="ico c-rl" aria-hidden="true"><svg><use href="icons.svg#i-loop"/></svg></span>
+      <div class="card-title">RL that ships</div>
+      <p>Multi-agent RL scheduling in production: hundreds of machines, tens of thousands of orders a day, 20% lower
+      operating cost. Patent applications on reward design and safe RL.</p>
+    </div>
+    <div class="card">
+      <span class="ico c-env" aria-hidden="true"><svg><use href="icons.svg#i-cube"/></svg></span>
+      <div class="card-title">Environments for agent post-training</div>
+      <p>Tool-use environments where simulators and design-rule checks score the outcome; agent trajectories and
+      fine-tuning for chip design.</p>
+    </div>
+    <div class="card">
+      <span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span>
+      <div class="card-title">Verifiers and evaluation</div>
+      <p>Checkers that pass only what code can confirm, and evaluations built to be trusted: blind labels, written
+      criteria, one measurement.</p>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="history">
+
+  <div class="row">
+    <div class="when">2019 -</div>
+    <div class="rail"><span class="ico c-env" aria-hidden="true"><svg><use href="icons.svg#i-chip"/></svg></span></div>
+    <div class="what">
+      <p>I am a Senior Staff ML Engineer and Senior Engineering Manager at <b>Samsung Display American Lab</b> in San
+      Jose, and the project lead for three programs: LLM agents for display-chip design, AI-driven materials discovery,
+      and multi-agent reinforcement learning (RL) for production scheduling. I lead a team of 8 researchers and
+      engineers and own delivery to the design, materials and manufacturing teams.</p>
+      <ul>
+        <li><b>Chip design.</b> I built ChipEnv, a tool-use environment over the circuit and layout stack (circuit
+        simulation, design-rule checking, parasitic RC extraction), generated agent trajectories in it, and fine-tuned
+        LLMs to answer design questions and to reduce parasitic resistance and capacitance under layout rules.</li>
+        <li><b>Materials.</b> I lead the search for long-lifetime deep-blue TADF emitters for OLED displays:
+        constrained molecular generation, property predictors, molecular-dynamics simulation, RL-based candidate search
+        and retrosynthesis filtering.</li>
+        <li><b>Scheduling.</b> Our multi-agent RL scheduler runs on production lines with hundreds of machines and tens
+        of thousands of orders a day, and cut operating cost by 20% against the previous scheduler.</li>
+        <li><b>Earlier.</b> ChatYield, an LLM agent for yield optimization (fine-tuned Llama-3; every proposed action is
+        tested in a digital-twin simulation before an engineer sees it), and production ML for predictive maintenance
+        (100% recall at a 48-hour lead time) and defect inspection (99% recall, 95% of inspections automated).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="when">2019 -</div>
+    <div class="rail"><span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span></div>
+    <div class="what">
+      <p>As an affiliated researcher at <b>Stanford</b>, I build <b>MORPHEUS.ai</b>, which tells a team which of
+      its requirements an AI agent breaks before the agent acts. It checks every step an agent plans or takes against
+      the user's requirements, keeps them across the conversation, and gives each verdict with its evidence &mdash;
+      met, broken, or cannot be checked. It runs as a hook inside Claude Code, Codex and Cursor, proposes re-checked
+      fixes when a step breaks a requirement, and turns ML experiment runs into records anyone can re-verify. It grew
+      out of a planning engine for science that builds a knowledge graph from papers (18,600+ actions from 665
+      documents, each traced to its page) and accepts a plan only after a verifier passes it. The research behind it:
+      EMNLP Findings 2025 and four 2026 preprints.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="when">2012 - 2019</div>
+    <div class="rail"><span class="ico c-edu" aria-hidden="true"><svg><use href="icons.svg#i-cap"/></svg></span></div>
+    <div class="what">
+      <p>PhD and MS at <b>Stanford</b> in Civil &amp; Environmental Engineering, focused on machine learning and
+      multi-agent systems. My dissertation was on multi-agent reinforcement learning for dynamic scheduling in
+      large-scale stochastic processing networks. I was a teaching assistant for CS229 (Machine Learning) and CS234
+      (Reinforcement Learning). Along the way I also worked on deep learning for audio: very deep CNNs on raw waveforms
+      (ICASSP 2017) and real-world adversarial attacks on wake-word detection (NeurIPS 2019).</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="when">2008 - 2012</div>
+    <div class="rail"><span class="ico c-edu" aria-hidden="true"><svg><use href="icons.svg#i-book"/></svg></span></div>
+    <div class="what">
+      <p>I studied at <b>Tongji University</b> in Shanghai.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="container">
+  <div class="sectitle">bio</div>
+  <p>Shuhui Qu is a machine learning researcher and engineer working on reinforcement learning and on AI agents whose
+  answers can be checked. At Samsung Display American Lab, Shuhui is a Senior Staff ML Engineer and the project lead
+  for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds MORPHEUS.ai,
+  which checks an AI agent's plans and actions against the user's requirements before it acts. PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
+</div>
+
+<div class="container" id="projects">
+  <div class="sectitle">projects</div>
+  <div class="pcards">
+    <a class="pcard" href="projects/#morpheus"><span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span>
+      <div class="pn">MORPHEUS.ai</div>
+      <div class="pd">Know which of your requirements an AI agent breaks &mdash; before it acts. Every verdict comes with its evidence.</div></a>
+    <a class="pcard" href="projects/#rung"><span class="ico c-rung" aria-hidden="true"><svg><use href="icons.svg#i-rung"/></svg></span>
+      <div class="pn">Rung</div>
+      <div class="pd">Pay for the expensive model only when the cheap one is shown wrong. One OpenAI-compatible endpoint.</div></a>
+    <a class="pcard" href="projects/#telemetry"><span class="ico c-tele" aria-hidden="true"><svg><use href="icons.svg#i-gauge"/></svg></span>
+      <div class="pn">trace2wm telemetry</div>
+      <div class="pd">Before you train your agent, find out if it's worth it &mdash; from the logs you already have.</div></a>
+  </div>
+</div>
+
+<div class="container" id="pubs">
+  <div class="sectitle">selected publications</div>
+  <p class="note">1,700+ citations, h-index 17. The full list is on <a href="https://scholar.google.com/citations?user=J_Ru5MgAAAAJ">Google Scholar</a>.</p>
+  <div class="group">LLM reasoning, planning and verification</div>
+  <ul class="pubs">
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:J_g5lzvAfSwC">A Category-Theoretic Approach to Neural-Symbolic Task Planning with Bidirectional Search.</a> S. Qu, J. Wang, K. Law. <i>Findings of EMNLP</i>, 2025.</li>
+    <li><a href="https://arxiv.org/abs/2601.20014">Teaching LLMs to Ask: Self-Querying Category-Theoretic Planning for Under-Specified Reasoning.</a> S. Qu. <i>arXiv</i>, 2026.</li>
+    <li><a href="https://arxiv.org/abs/2601.20021">Fuzzy Categorical Planning: Autonomous Goal Satisfaction with Graded Semantic Constraints.</a> S. Qu. <i>arXiv</i>, 2026.</li>
+    <li><a href="https://arxiv.org/abs/2602.03974">Active Epistemic Control for Query-Efficient Verified Planning.</a> S. Qu. <i>arXiv</i>, 2026.</li>
+    <li><a href="https://arxiv.org/abs/2602.03975">Adaptive Test-Time Compute Allocation via Learned Heuristics over Categorical Structure.</a> S. Qu. <i>arXiv</i>, 2026.</li>
+    <li><a href="https://arxiv.org/abs/2602.15870">VDLM: Variable Diffusion LMs via Robust Latent-to-Text Rendering.</a> S. Qu. <i>arXiv</i>, 2026.</li>
+  </ul>
+  <div class="group">Reinforcement learning and scheduling</div>
+  <ul class="pubs">
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:M3NEmzRMIkIC">Heterogeneous Resource Constrained Reinforcement Learning Photolithography Scheduler with Heterogeneous Graph Attention Network.</a> S. Qu, K. Yazdani, J. Lee. <i>SID Symposium Digest</i>, 2024.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:4TOpqqG69KYC">Multi-agent Context-aware Dynamic Scheduling for Large-scale Processing Networks.</a> S. Qu, Y. Chen, J. Jasperneite, M.D. Lepech, J. Wang. <i>IEEE ETFA</i>, 2020.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:KlAtU1dfN6UC">Dynamic Scheduling in Modern Processing Systems Using Expert-guided Distributed Reinforcement Learning.</a> S. Qu, J. Wang, J. Jasperneite. <i>IEEE ETFA</i>, 2019.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:qxL8FJ1GzNcC">Dynamic Scheduling in Large-scale Manufacturing Processing Systems Using Multi-agent Reinforcement Learning.</a> S. Qu. <i>PhD dissertation, Stanford University</i>, 2019.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:MXK_kJrjxJIC">Dynamic Scheduling in Large-scale Stochastic Processing Networks for Demand-driven Manufacturing Using Distributed Reinforcement Learning.</a> S. Qu, J. Wang, J. Jasperneite. <i>IEEE ETFA</i>, 2018.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:ufrVoPGSRksC">Optimized Adaptive Scheduling of a Manufacturing Process System with Multi-skill Workforce and Multiple Machine Types: An Ontology-based, Multi-agent Reinforcement Learning Approach.</a> S. Qu, J. Wang, S. Govil, J.O. Leckie. <i>Procedia CIRP</i>, 2016.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:zYLM7Y9cAGgC">Learning Adaptive Dispatching Rules for a Manufacturing Process System by Using Reinforcement Learning Approach.</a> S. Qu, J. Wang, S. Govil. <i>IEEE ETFA</i>, 2016.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:UebtZRa9Y70C">Large-scale Multi-agent Reinforcement Learning Using Image-based State Representation.</a> T. Chu, S. Qu, J. Wang. <i>IEEE CDC</i>, 2016.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:YsMSGLbcyi4C">Large-scale Traffic Grid Signal Control with Regional Reinforcement Learning.</a> T. Chu, S. Qu, J. Wang. <i>American Control Conference</i>, 2016.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:hqOjcs7Dif8C">A Centralized Reinforcement Learning Approach for Proactive Scheduling in Manufacturing.</a> S. Qu, T. Chu, J. Wang, J. Leckie, W. Jian. <i>IEEE ETFA</i>, 2015.</li>
+  </ul>
+  <div class="group">AI for science and display design</div>
+  <ul class="pubs">
+    <li><a href="https://arxiv.org/abs/2602.20140">PackFlow: Generative Molecular Crystal Structure Prediction via Reinforcement Learning Alignment.</a> A. Subramanian, E. Pan, J. Nam, M. Weiler, S. Qu, C.W. Park, T.S. Jaakkola, et al.. <i>arXiv</i>, 2026.</li>
+    <li><a href="https://arxiv.org/abs/2512.12489">GoMS: Graph of Molecule Substructure Network for Molecule Property Prediction.</a> S. Qu, C. Park. <i>arXiv</i>, 2025.</li>
+    <li><a href="https://arxiv.org/abs/2410.07539">Efficient Generation of Molecular Clusters with Dual-Scale Equivariant Flow Matching.</a> A. Subramanian, S. Qu, C.W. Park, S. Liu, J. Lee, R. Gómez-Bombarelli. <i>arXiv</i>, 2024.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:bEWYMUwI8FkC">Efficient Multi-stage Bayesian Optimization for Optimal Display Circuit Input Signal Design.</a> Y. Bliesener, Z. Wang, S. Qu, J. Park, J. Lee. <i>SID Symposium Digest</i>, 2023.</li>
+  </ul>
+  <div class="group">Machine learning for manufacturing</div>
+  <ul class="pubs">
+    <li><a href="https://arxiv.org/abs/2501.09187">Patch-aware Vector Quantized Codebook Learning for Unsupervised Visual Defect Detection.</a> Q. Cheng, S. Qu, J. Lee. <i>arXiv</i>, 2025.</li>
+    <li><a href="https://arxiv.org/abs/2309.08799">SHAPNN: Shapley Value Regularized Tabular Neural Network.</a> Q. Cheng, S. Qu, J. Lee. <i>arXiv</i>, 2023.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:mB3voiENLucC">Deep Learning Based Visual Defect Detection in Noisy and Imbalanced Data.</a> Q. Cheng, S. Qu, J. Lee. <i>SID Symposium Digest</i>, 2022.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:Wp0gIr-vW9MC">Multimodal Machine Learning for Display Panel Defect Layer Identification.</a> J. Lee, S. Qu, Y. Kang, W. Jang. <i>SEMI ASMC</i>, 2021.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:mVmsd5A6BfQC">Data Augmentation for Applying Deep Learning to Display Manufacturing Defect Detection (invited paper).</a> W. Xiong, J. Lee, S. Qu, W. Jang. <i>SID Symposium Digest</i>, 2020.</li>
+  </ul>
+  <div class="group">Audio, multimodal learning and robustness</div>
+  <ul class="pubs">
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:IWHjjKOFINEC">On Adversarial Robustness of Large-scale Audio Visual Learning.</a> J.B. Li, S. Qu, X. Li, P.Y.B. Huang, F. Metze. <i>ICASSP</i>, 2022.</li>
+    <li><a href="https://arxiv.org/abs/2210.07171">SQuAT: Sharpness- and Quantization-Aware Training for BERT.</a> Z. Wang, J.B. Li, S. Qu, F. Metze, E. Strubell. <i>arXiv</i>, 2022.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:dhFuZR0502QC">Efficient Multi-modal Fusion with Diversity Analysis.</a> S. Qu, Y. Kang, J. Lee. <i>ACM Multimedia</i>, 2021.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:Zph67rFs4hoC">Adversarial Music: Real World Audio Adversary Against Wake-word Detection System.</a> J. Li, S. Qu, X. Li, J. Szurley, J.Z. Kolter, F. Metze. <i>NeurIPS</i>, 2019.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:Tyk-4Ss8FVUC">Very Deep Convolutional Neural Networks for Raw Waveforms.</a> W. Dai, C. Dai, S. Qu, J. Li, S. Das. <i>ICASSP</i>, 2017.</li>
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:IjCSPb-OGe4C">A Comparison of Deep Learning Methods for Environmental Sound Detection.</a> J. Li, W. Dai, F. Metze, S. Qu, S. Das. <i>ICASSP</i>, 2017.</li>
+  </ul>
+  <div class="group">Other</div>
+  <ul class="pubs">
+    <li><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=J_Ru5MgAAAAJ&citation_for_view=J_Ru5MgAAAAJ:_kc_bZDykSQC">Online Identification of Inertia Distribution in Normal Operating Power System.</a> F. Zeng, J. Zhang, Y. Zhou, S. Qu. <i>IEEE Transactions on Power Systems</i>, 2020.</li>
+  </ul>
+</div>
+
+<div class="container" id="patents">
+  <div class="sectitle">patents</div>
+  <p class="note">Most were filed with Samsung Display. Links go to Google Patents.</p>
+  <div class="group">Granted</div>
+  <ul class="pubs">
+    <li><a href="https://patents.google.com/patent/US12675989B2/en">US 12,675,989</a> &mdash; Fusion model training using distance metrics</li>
+    <li><a href="https://patents.google.com/patent/US12657884B2/en">US 12,657,884</a> &mdash; System and method for synthetic image generation</li>
+    <li><a href="https://patents.google.com/patent/US12561962B2/en">US 12,561,962</a> &mdash; Multimodal fusion of missing and unpaired image and tabular data for defect classification</li>
+    <li><a href="https://patents.google.com/patent/US12518169B2/en">US 12,518,169</a> &mdash; Sample generation for identifying manufacturing defects</li>
+    <li><a href="https://patents.google.com/patent/US12315136B2/en">US 12,315,136</a> &mdash; Vector quantized auto-encoder codebook learning for manufacturing display extreme minor defects detection</li>
+    <li><a href="https://patents.google.com/patent/US12301833B2/en">US 12,301,833</a> &mdash; Video-based patch-wise vector quantized auto-encoder codebook learning for video anomaly detection</li>
+    <li><a href="https://patents.google.com/patent/US12136205B2/en">US 12,136,205</a> &mdash; Image-based defects identification and semi-supervised localization</li>
+    <li><a href="https://patents.google.com/patent/US11948347B2/en">US 11,948,347</a> &mdash; Fusion model training using distance metrics</li>
+    <li><a href="https://patents.google.com/patent/US11694319B2/en">US 11,694,319</a> &mdash; Image-based defects identification and semi-supervised localization</li>
+    <li><a href="https://patents.google.com/patent/US11435719B2/en">US 11,435,719</a> &mdash; System and method for identifying manufacturing defects</li>
+    <li><a href="https://patents.google.com/patent/EP3798924B1/en">EP 3 798 924</a> &mdash; System and method for classifying manufactured products</li>
+    <li><a href="https://patents.google.com/patent/EP4080414B1/en">EP 4 080 414</a> &mdash; Systems and methods for identifying manufacturing defects</li>
+  </ul>
+  <div class="group">Pending: reinforcement learning and safe RL</div>
+  <ul class="pubs">
+    <li><a href="https://patents.google.com/patent/US20250284969A1/en">Stabilization of multi-agent reinforcement learning</a></li>
+    <li><a href="https://patents.google.com/patent/US20250285017A1/en">Safe RL with an integrated intervention policy</a></li>
+    <li><a href="https://patents.google.com/patent/US20250251705A1/en">Policy generation for a new reward</a></li>
+    <li><a href="https://patents.google.com/patent/US20250278295A1/en">Policy adaptation based on importance sampling</a></li>
+    <li><a href="https://patents.google.com/patent/US20250252371A1/en">Manufacturing scheduling based on reward reweighting</a></li>
+    <li><a href="https://patents.google.com/patent/US20250190887A1/en">Robustness scheduling policy for manufacturing</a></li>
+  </ul>
+  <div class="group">Pending: materials</div>
+  <ul class="pubs">
+    <li><a href="https://patents.google.com/patent/US20260085234A1/en">t-DABNA-based thermally activated delayed fluorescent (TADF) molecules for blue OLED devices</a></li>
+    <li><a href="https://patents.google.com/patent/US20260134171A1/en">Material subgraph models</a></li>
+    <li><a href="https://patents.google.com/patent/US20260133548A1/en">Material subgraph model pre-training through independent and integrated force fields</a></li>
+  </ul>
+  <div class="group">Pending: display circuits and inspection</div>
+  <ul class="pubs">
+    <li><a href="https://patents.google.com/patent/US20240160824A1/en">Multi-stage display circuit input design</a></li>
+    <li><a href="https://patents.google.com/patent/US20260010448A1/en">Anomaly detection</a></li>
+    <li><a href="https://patents.google.com/patent/US20240127030A1/en">Machine learning systems and methods for classification</a></li>
+    <li><a href="https://patents.google.com/patent/US20230267599A1/en">Defect detection</a></li>
+  </ul>
+  <div class="group">Pending: image editing</div>
+  <ul class="pubs">
+    <li><a href="https://patents.google.com/patent/US20250104309A1/en">Semantic-based image editing method and system</a></li>
+  </ul>
+</div>
+
+<div class="container foot">Contact: <a href="mailto:shuhuiq@stanford.edu">shuhuiq@stanford.edu</a></div>
+
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MORPHEUS: checking what an AI agent does against what you asked · Shuhui Qu</title>
+<meta name="description" content="What MORPHEUS.ai does, how it decides, where it came from, and what it still gets wrong.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-verify lg" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
+<h1>MORPHEUS: checking what an AI agent does against what you asked</h1>
+<div class="meta">October 2026</div>
+
+<p>AI agents now plan trips, write code and run experiments, and they break your requirements quietly. A travel
+plan says &ldquo;total: within budget&rdquo; and leaves out the line that puts it over. A coding agent installs the
+dependency you said not to add. An experiment loop edits the file that computes its own score. In each case the
+agent's own summary says everything is fine.</p>
+
+<p><a href="../projects/#morpheus">MORPHEUS.ai</a> is built to catch these before they matter. For every
+requirement you gave the agent, it says whether the agent's plan or action <b>meets</b> it, <b>breaks</b> it, or
+<b>cannot be checked</b> &mdash; and shows the evidence for each verdict.</p>
+
+<h3>How it decides</h3>
+<ul>
+  <li><b>Your requirements become a ledger.</b> Each one is stored with its kind (a budget, a deadline, something
+  forbidden, a rule about how to work), its limit, and your own words as the source. The ledger lasts for the whole
+  conversation: when you add or change something later, the same entry is updated instead of the plan starting
+  over.</li>
+  <li><b>Only evidence code can check.</b> A model reads the structure of the plan or the tool call; code adds up the
+  money, places the times on a clock and matches quoted text; a second model confirms the reading. What the agent
+  says about its own work &mdash; a written total, a &ldquo;done&rdquo;, a &ldquo;tests pass&rdquo; &mdash; is never
+  evidence.</li>
+  <li><b>&ldquo;Cannot be checked&rdquo; is an answer.</b> If a price is a range, an item is optional, or a time
+  could be morning or evening, the verdict must hold under every reading; if it does not, MORPHEUS says it cannot
+  tell and names what is missing, instead of guessing.</li>
+</ul>
+
+<h3>Four ways it is used</h3>
+
+<p><b>Check.</b> Give it a task and a plan &mdash; on a web page, through an API or from the command line &mdash; and
+get back one verdict per requirement, each tied to the plan line and the arithmetic behind it.</p>
+
+<p><b>Stop.</b> Installed as a hook in Claude Code, Codex or Cursor, it sees every tool call before it runs. It
+blocks a call only when the call is shown to break a requirement you confirmed &mdash; &ldquo;no new
+dependencies&rdquo;, &ldquo;no force push&rdquo;, &ldquo;never edit the evaluator&rdquo; &mdash; asks you when it
+cannot tell, and checks the agent's &ldquo;done&rdquo; at the end of a turn. Replayed on 4,750 tool calls from 20 real
+coding sessions, it blocked 10 calls, every one a real violation. One lesson came for free: a hook that takes too long
+is killed by the agent and the call goes through anyway, so every check has a hard time limit.</p>
+
+<p><b>Fix.</b> When a step breaks a requirement, it proposes alternatives at that step &mdash; computed where the
+fix is arithmetic, drafted by a model where it is not &mdash; and re-checks each one before showing it. On 178 test
+cases with known answers, where a fix applied it repaired 40 of 41 budget overruns and all 16 planted deadline misses
+in structured plans without breaking any other requirement; three fixes looked right and were not. The fixes also
+tended to cut more than needed, and the
+weakest link turned out to be the verifier itself: reading an edited plan from scratch, it confirmed only 41 % of the
+fixes that were in fact correct.</p>
+
+<p><b>Record.</b> For ML experiment loops (autoresearch-style agents, speedruns, competitions with a fixed
+evaluator), it turns a run into a record that someone else can re-verify: the evaluator is frozen and edits to it are
+blocked, results need at least three seeds on both sides and a significance test, ten static audit rules look for
+metric gaming, and the result is recomputed from the saved artifacts. So far this has been tested on a toy loop, not
+yet on a real one.</p>
+
+<h3>Where it came from</h3>
+
+<p>The name stands for <i>Morphism-Oriented Reasoning with Provable, Honest, Epistemic Understanding for
+Science</i>. It started as a planning engine for science. An LLM pipeline read papers, textbooks and documents and
+extracted typed actions (what a step needs and what it produces) and checkable claims, each linked to its document,
+page and passage &mdash; 18,600+ actions and 27,900+ claims from 665 documents, across 16 domains from classical
+mechanics and OLED emitter screening to protein engineering and logistics. A category-theoretic planner searched
+forward from the current state and backward from the goal, marked every fact as satisfied, violated or unknown, kept
+vague requirements apart from missing information, and closed unknowns with a targeted question instead of a guess.
+A three-layer gate &mdash; hard checks, composition, a quality bound &mdash; accepted or rejected each plan. The same
+engine handled plans for several stakeholders with fairness and game-theoretic checks, and proposed improvements to
+itself that a person had to approve.</p>
+
+<figure class="fig">
+  <img src="../figures/emnlp2025-fig1.png" alt="Neural-symbolic planning: LLM task decomposition, category-theoretic validation, bidirectional search with pullback merge">
+  <figcaption><b>Fig. 1.</b> The planning framework MORPHEUS started from: (1) a language model decomposes the task into
+  resources, constraints and operations; (2) category-theoretic validation checks each step (a morphism) against them;
+  (3) search runs forward from the initial state w<sub>0</sub> and backward from the goal w<sup>*</sup>, and the two meet
+  through a pullback merge. (Figure 1 of the author's paper, <a href="https://aclanthology.org/2025.findings-emnlp.1157/">Qu,
+  Wang &amp; Law, Findings of EMNLP 2025</a>.)</figcaption>
+</figure>
+
+
+<p>The planner is what the papers are about (<a href="https://arxiv.org/abs/2601.20014">self-querying
+planning</a>, <a href="https://arxiv.org/abs/2601.20021">fuzzy categorical planning</a>,
+<a href="https://arxiv.org/abs/2602.03974">active epistemic control</a>, a category-theoretic planner at EMNLP
+Findings 2025). The verifier is what turned out to be useful on its own: whatever writes the plan &mdash; my planner,
+a chat model or a coding agent &mdash; something has to decide whether it does what was asked. One rule carried
+over unchanged: language models propose, a verifier accepts.</p>
+
+<h3>What it measured</h3>
+
+<p>On a blind held-out set of 20 planning tasks, I compared MORPHEUS with LLM judges. The judges agreed with the
+labels more often, and let 2 to 8 of 8 planted budget overruns through; MORPHEUS let none through. Its verdicts also
+worked as training data: a small model fine-tuned on them for about $1 went from accepting 6 of the 8 planted
+overruns to 1, including overruns worded in a way it never saw. Details:
+<a href="judge-that-agrees-most.html">the judge that agrees most is not the safest</a>.</p>
+
+<h3>What it still gets wrong</h3>
+<ul>
+  <li><b>Money with buffers and options.</b> It confirmed none of 11 honest budgets whose totals came with a
+  contingency, optional items or per-person prices: it cannot settle them into one number, so it says it cannot
+  tell.</li>
+  <li><b>Too much &ldquo;cannot tell&rdquo;.</b> On requirements that were actually met, it said &ldquo;cannot
+  tell&rdquo; about 4 times in 10. That is the price of never saying &ldquo;met&rdquo; wrongly, and the main thing
+  to reduce.</li>
+  <li><b>Small evaluations.</b> 20 tasks, labels from two model labellers and an adjudicator, one developer's coding
+  sessions. The numbers say what happened on these sets, not everywhere.</li>
+</ul>
+
+</div>
+</body>
+</html>

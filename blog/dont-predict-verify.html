@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Don't predict, verify: building a model router · Shuhui Qu</title>
+<meta name="description" content="What building Rung, a verified cascade router, taught me about routing LLM requests: prediction from the prompt failed; escalating on evidence worked; the check is the hard part.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-rung lg" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+<h1>Don't predict, verify: building a model router</h1>
+<div class="meta">October 2026</div>
+
+<p>Most model routers read the prompt and predict which model should answer it. I built
+<a href="../projects/#rung">Rung</a>, which does the opposite: it sends the request to the cheapest model first,
+checks the answer, and moves up to a more expensive model only when the check says the answer is wrong. To the
+caller it is one OpenAI-compatible endpoint; every response also says which model answered, what each attempt cost,
+and whether anything checked it. These are the four things I learned building it.</p>
+
+<p>Using it takes one line: start the gateway with your list of models and their prices, and point an existing
+OpenAI client at it with the model name <code>auto</code>. Answers come back in the usual shape, plus a
+<code>router</code> block listing each attempt, what it cost and whether it was verified. With no routing table of
+your own yet, it simply climbs the price ladder.</p>
+
+<h3>1. The prompt does not tell you which model will win</h3>
+
+<p>I started where everyone starts: predict the best model from the request. I tried summaries of the task, the full
+prompt, TF-IDF features, neural embeddings and a fine-tuned small language model, at two data scales, with
+leave-one-repository-out splits and permutation baselines. None of it beat a policy that predicts nothing.
+Measured on 6,891 (task, configuration) cells from an agentic-coding corpus, prediction recovered none of the gain
+that was there to take. The information that says which model succeeds shows up when the model runs, not in the text of the
+request.</p>
+
+<h3>2. Climb a price ladder, on evidence</h3>
+
+<p>What did work is boring. Order the models by measured cost, try the cheapest, and climb only when an answer is
+shown to be wrong; the per-task budget decides how many attempts each rung gets. On HumanEval+ (164 tasks, 4 trials
+per cell), at matched spend, this ladder came out ahead of every fixed single model in 37 of 39 comparisons.</p>
+
+<h3>3. Averages hide where the expensive model matters</h3>
+
+<p>Across models, the cost per correct answer differed by 163&times;. Averaged over all tasks, the most expensive
+model looked barely worth its price. Split by kind of task, the picture changed: its advantage was 58 points on one
+category and 2 on another. So Rung routes sideways first &mdash; look up the task's category in a table of measured
+cost per success &mdash; and climbs the ladder second.</p>
+
+<p>That table is built offline from each operator's own traffic and installed as a file, on purpose. A router that
+re-derives its routing from its own logs stops sending traffic to the models it has demoted, so their estimates
+freeze at whatever value demoted them, and it can never find out it was wrong.</p>
+
+<h3>4. The check is the product</h3>
+
+<p>A ladder is only as good as the thing that says &ldquo;this answer is wrong, escalate&rdquo;, and most users have
+no test suite. On 404 (task, model) cells I measured how well each kind of check tracked whether an answer was
+actually correct:</p>
+
+<table>
+  <tr><th>check</th><th>correlation with &ldquo;actually correct&rdquo;</th></tr>
+  <tr><td>run the test suite</td><td>0.85</td></tr>
+  <tr><td>ask the same model 3 times and require it to agree with itself</td><td><b>0.78&ndash;0.98</b></td></tr>
+  <tr><td>ask a model of the same tier to grade the answer</td><td>negative: it preferred fluent fabrications</td></tr>
+</table>
+
+<p>Self-consistency costs about 3 % of one call to the top model and needs nothing from the user. It works because it
+never asks &ldquo;is this right&rdquo;, which requires knowing the answer, only &ldquo;is the model steady
+here&rdquo;, which the outputs already show. Three samples is a cliff, not a slope: with two, the correlation fell
+to zero.</p>
+
+<h3>Smaller lessons, each paid for</h3>
+<ul>
+  <li><b>Prices are inputs you must check.</b> Ours were once wrong by 7.6&times;, and a &ldquo;$1.00 cap&rdquo;
+  quietly spent $7.60.</li>
+  <li><b>An accepted option that does nothing is a bug.</b> Two router options were accepted by the API and silently
+  discarded; a caller asking for an error on failure got a best-effort answer instead.</li>
+  <li><b>Escalate on the first verified failure.</b> The first version kept re-sampling a model that had just been
+  shown to fail until its attempts ran out.</li>
+  <li><b>A default is a promise.</b> The SDKs once defaulted to an endpoint on a domain nobody had registered;
+  whoever registered it would have received every forgetful caller's prompts and API key. The default is gone.</li>
+</ul>
+
+<p class="caveat">Limits: the numbers come from HumanEval+ and one agentic-coding corpus; your traffic is different,
+which is why each operator builds their own routing table. Escalation adds latency, so this is not for interactive
+chat, and without any check the ladder has nothing to climb on.</p>
+
+</div>
+</body>
+</html>

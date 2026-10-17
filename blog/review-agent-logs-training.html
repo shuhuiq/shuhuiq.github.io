@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From agent logs to training: what the papers measure, and what they skip · Shuhui Qu</title>
+<meta name="description" content="A review of training agents from their traces — trajectory data, simulators, RL, training versus retrying, evaluation validity — and where trace2wm telemetry differs.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
+<h1>From agent logs to training: what the papers measure, and what they skip</h1>
+<div class="byline">Date: October 2026 &nbsp;|&nbsp; Estimated reading time: 8 min &nbsp;|&nbsp; Author: Shuhui Qu</div>
+
+<p>A team running an AI agent in production accumulates logs: conversations, tool calls, outcomes. Sooner or later
+someone asks whether to train a smaller model on them. The literature has a lot to say about <i>how</i> to train agents
+from trajectories, and much less about the question the team actually has: <i>should</i> we, on these logs, and will it
+beat simply letting the agent try again? This post reviews what is known &mdash; trajectory data and fine-tuning,
+simulators built from traces, reinforcement learning, training versus retrying, and whether measured gains are real
+&mdash; and where my tool <a href="../projects/#telemetry">trace2wm telemetry</a> differs. (For what the tool does, see
+<a href="before-you-train-on-agent-logs.html">this post</a>.)</p>
+
+<p>Terms used below: <b>SFT</b> (supervised fine-tuning) trains a model to copy example trajectories; <b>RL</b>
+(reinforcement learning) trains it by trial and a reward; <b>pass@k</b> is the share of tasks solved at least once in
+<i>k</i> attempts.</p>
+
+<details class="toc" open><summary>Table of Contents</summary>
+<ol>
+  <li><a href="#sft">Trajectory data and fine-tuning</a></li>
+  <li><a href="#hurts">When training hurts</a></li>
+  <li><a href="#simulators">Simulators built from traces</a></li>
+  <li><a href="#retry">Train, or try again?</a></li>
+  <li><a href="#validity">Is the measured gain real?</a></li>
+  <li><a href="#forecast">Forecasting before training</a></li>
+  <li><a href="#how-we-differ">Where trace2wm telemetry differs</a></li>
+  <li><a href="#ahead">Where the literature is ahead</a></li>
+  <li><a href="#references">References</a></li>
+</ol>
+</details>
+
+<h2 id="sft">Trajectory data and fine-tuning</h2>
+
+<p>The standard recipe: collect trajectories of a strong model (or of people) doing the task, keep the ones that
+succeeded, convert them into a training format, and fine-tune a smaller model. It works across three orders of magnitude
+of data. 500 GPT-4 trajectories raised Llama2-7B's HotpotQA performance by 77 % <a class="cite" href="#ref-1">(Chen et
+al. 2023)</a>; 1,866 verified trajectories mixed with general data made a 70B model comparable to GPT-3.5-turbo on
+unseen agent tasks <a class="cite" href="#ref-2">(Zeng et al. 2023)</a>; 491 trajectories in executable software tasks
+gave up to 19 % absolute gains <a class="cite" href="#ref-3">(Pan et al. 2024)</a>; unifying 13 datasets into 1.3 million
+trajectories gave an average gain of about 20 % <a class="cite" href="#ref-4">(Song et al. 2025)</a>. The papers agree
+that quality and format matter more than volume (see Fig. 2 of <a href="https://arxiv.org/abs/2310.12823">AgentTuning</a>
+for a typical construction pipeline).</p>
+
+<h2 id="hurts">When training hurts</h2>
+
+<p>The cases where training made an agent worse are documented, but scattered:</p>
+<ul>
+  <li>Fine-tuning Qwen2.5-32B on AppWorld's own ground-truth programs dropped its task completion from 39.2 to 6.2; an RL
+  variant trained on only 24 scenarios reached 71.3 <a class="cite" href="#ref-5">(Chen et al. 2025, LOOP)</a>.</li>
+  <li>The same roughly 2,000 cold-start trajectories lowered Qwen3-8B on τ²-Retail from 41.0 to 31.4 but raised Qwen3-14B
+  from 43.1 to 53.7, and lowered Telecom scores at all three model sizes <a class="cite" href="#ref-6">(Zhao et al. 2025,
+  MUA-RL)</a>.</li>
+  <li>Agent corpora entangle format-following with reasoning, different capabilities are learned at different speeds,
+  and agent tuning adds hallucinations <a class="cite" href="#ref-7">(Chen et al. 2024, Agent-FLAN)</a>.</li>
+  <li>RL needs a reward that varies: tasks solved by every attempt, or by none, provide &ldquo;no meaningful training
+  signal&rdquo; <a class="cite" href="#ref-8">(Foster et al. 2025)</a>, and multi-turn RL can fall into an &ldquo;Echo
+  Trap&rdquo; where reward variance collapses <a class="cite" href="#ref-9">(Wang et al. 2025, RAGEN)</a>.</li>
+</ul>
+
+<h2 id="simulators">Simulators built from traces</h2>
+
+<p>RL and large-scale data generation need an environment the agent can act in. Three families build one: a language
+model that <i>simulates</i> the tools and the user; hand-built executable environments; and environment configurations
+generated by a model. ToolEmu emulates tool execution with a language model and evaluates safety automatically; humans
+validated that 68.8 % of the failures it found were real <a class="cite" href="#ref-10">(Ruan et al. 2023)</a>.
+τ-bench simulates the user with a language model and scores the final database state against a goal state
+<a class="cite" href="#ref-11">(Yao et al. 2024)</a>; in its successor, annotators found user-simulator errors in 16 %
+of telecom conversations, against 40 % in the original retail domain <a class="cite" href="#ref-12">(Barres et al.
+2025)</a>. Simia amplifies about 5,000 seed trajectories into 90,000 simulated ones and lifts Qwen2.5-3B on τ²-Bench from
+9.5 to 31.7, without reporting how often a simulated tool response matches a real one
+<a class="cite" href="#ref-13">(Li et al. 2025)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/toolemu-fig1.png" alt="ToolEmu: agent, LM emulator, automatic evaluator">
+  <figcaption><b>Fig. 1.</b> ToolEmu: a language model emulates tool execution for the agent, and an automatic
+  evaluator scores the trajectory; fidelity was checked by human review. (Image source:
+  <a href="https://arxiv.org/abs/2309.15817">Ruan et al. 2023</a>, Fig. 1, arXiv:2309.15817v2; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>The common thread: simulator fidelity is judged by humans on small pooled samples, or indirectly through gains after
+moving to the real environment. We did not find a paper that decides, task by task and with a statistical test, whether
+a simulator behaves like the real system.</p>
+
+<h2 id="retry">Train, or try again?</h2>
+
+<p>Before training, there is a cheaper option: sample the agent several times and keep an attempt that works. Repeated
+sampling scales surprisingly far &mdash; on SWE-bench Lite, coverage rose from 15.9 % with one sample to 56 % with 250
+<a class="cite" href="#ref-14">(Brown et al. 2024)</a> &mdash; and compute-optimal test-time search beat a 14&times; larger
+model in a FLOPs-matched comparison on problems of moderate difficulty <a class="cite" href="#ref-15">(Snell et al. 2024)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/large-language-monkeys-fig1.png" alt="Repeated sampling: generate many candidates, use a verifier to pick one">
+  <figcaption><b>Fig. 2.</b> Repeated sampling: generate many candidate solutions, then use a verifier &mdash; unit tests,
+  proof checkers, majority voting &mdash; to pick one. Coverage and precision are separate problems. (Image source:
+  <a href="https://arxiv.org/abs/2407.21787">Brown et al. 2024</a>, Fig. 1, arXiv:2407.21787v3; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>Training can erode exactly this advantage. Standard fine-tuning made Llama-3-8B more confident: over four epochs its
+pass@1 on MATH rose from 4.4 % to 7.4 %, while its pass@4k fell from 82.5 % to 63.0 % <a class="cite" href="#ref-16">(Chen
+et al. 2025)</a>. RL with verifiable rewards shows the same shape: trained models beat their base models at small
+<i>k</i> and lose at large <i>k</i> <a class="cite" href="#ref-17">(Yue et al. 2025)</a>. And retrying has its own ceiling:
+with an imperfect verifier, more attempts cannot lower the chance of accepting a wrong answer, and the best number of
+attempts is often under ten <a class="cite" href="#ref-18">(Stroebl et al. 2024)</a>.</p>
+
+<figure class="fig">
+  <img src="../figures/rethinking-finetuning-fig1.svg" alt="Cross-entropy fine-tuning breeds overconfidence that harms pass@N">
+  <figcaption><b>Fig. 3.</b> Standard (cross-entropy) fine-tuning makes the model overconfident, which hurts pass@N; a
+  loss that limits confidence keeps the benefit of sampling. (Image source: <a href="https://arxiv.org/abs/2502.07154">Chen,
+  Raventos, Cheng, Ganguli &amp; Druckmann 2025</a>, Fig. 1, arXiv:2502.07154v4; CC BY 4.0; unmodified.)</figcaption>
+</figure>
+
+<p>All of this evidence comes from math, code and question answering, where attempts are independent and cheap to
+repeat. We did not find a study that compares training against retrying at equal <i>dollar</i> cost on a team's own
+deployment logs.</p>
+
+<h2 id="validity">Is the measured gain real?</h2>
+
+<p>Evaluation-validity work keeps finding the same mistakes. τ-bench counted empty responses as successes on impossible
+tasks, so a trivial agent scored 38 % and beat a GPT-4o agent; flaws like this mis-estimate agent performance by up to
+100 % in relative terms <a class="cite" href="#ref-19">(Zhu et al. 2025)</a>. Many agent benchmarks &ldquo;have inadequate
+holdout sets, and sometimes none at all&rdquo;, and ignore cost <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a>.
+Training on the test task confounds comparisons unless every arm is trained on the same task data
+<a class="cite" href="#ref-21">(Dominguez-Olmedo et al. 2024)</a>. The mistakes trace2wm telemetry was built to catch
+&mdash; each of which happened in my own trace2wm project &mdash; line up with published ones:</p>
+
+<table>
+  <tr><th>what we found in our own project</th><th>published analogue</th></tr>
+  <tr><td>38.5 % of episodes empty, though the row count looked fine</td><td>τ-bench counted empty responses as success <a class="cite" href="#ref-19">(Zhu et al. 2025)</a></td></tr>
+  <tr><td>29 of 77 training tasks had no demonstration</td><td>all-or-none tasks carry no training signal <a class="cite" href="#ref-8">(Foster et al. 2025)</a></td></tr>
+  <tr><td>evaluation prompts rendered differently from training, five times</td><td>format-following entangled with reasoning <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
+  <tr><td>the only gain was on the 6 trained tasks; nothing held out</td><td>holdouts must match the level of generality <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a></td></tr>
+  <tr><td>93 % of the tokens the loss was computed on were not actions</td><td>capabilities learned at different speeds <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
+  <tr><td>22 of 75 simulated final states rejected by the real scorer</td><td>31.2 % of ToolEmu-found failures not valid <a class="cite" href="#ref-10">(Ruan et al. 2023)</a>; 16&ndash;40 % user-simulator error <a class="cite" href="#ref-12">(Barres et al. 2025)</a></td></tr>
+</table>
+
+<h2 id="forecast">Forecasting before training</h2>
+
+<p>Forecasting what training will reach exists, but at the level of scale: emergence laws fitted over amounts of
+fine-tuning data <a class="cite" href="#ref-22">(Snell et al. 2024)</a>, and observational scaling laws built from about
+100 public models <a class="cite" href="#ref-23">(Ruan et al. 2024)</a>. Both work from model checkpoints or leaderboards.
+Learnability is estimated online, from the policy's own samples during training <a class="cite" href="#ref-8">(Foster et al.
+2025)</a>. None of it works read-only from a team's logs.</p>
+
+<h2 id="how-we-differ">Where trace2wm telemetry differs</h2>
+
+<div class="diff">
+<ul>
+  <li><b>Before training, from logs alone.</b> It reads the logs a team already has (OpenAI chat, OpenTelemetry GenAI,
+  Phoenix spans, ToolTalk / ATIF trajectories, spreadsheets), only reads, runs on a CPU and makes no API calls, and
+  answers four questions: can a training environment and a reward be built, what to collect next, what each method
+  could reach, and whether a claimed gain is real. To our knowledge, no published tool turns heterogeneous agent logs
+  into train / collect / retry recommendations without training; the nearest neighbour, the Agent Data Protocol, unifies
+  formats in order to train.</li>
+  <li><b>Simulator fidelity per task, with a test.</b> Instead of human plausibility ratings, it replays the saved
+  trajectories through both the simulator and the real environment and compares, call by call, which calls one ran and
+  the other refused (an exact paired test, corrected for the number of tasks). On its own corpus, 20,814 paired calls
+  decided 23 of 23 tasks, where comparing success rates left 9 undecided (our measurement). ToolTalk's replay-style
+  evaluation <a class="cite" href="#ref-24">(Farn &amp; Shin 2023)</a> is the closest structure; it does not turn replay
+  into a fidelity test.</li>
+  <li><b>Train or try again, at the same cost.</b> It applies cost-aware evaluation to the training decision itself:
+  retrying is measured on the team's own log; training is a range from published results, tagged as such. The direct
+  before/after comparison at equal spend is designed, not built.</li>
+  <li><b>Honest by construction.</b> Forecasts are ranges, never points, each tagged measured, extrapolated or
+  literature; an unknown is never drawn as zero; two evaluation results are compared only if they measured the same
+  thing the same way.</li>
+</ul>
+</div>
+
+<h2 id="ahead">Where the literature is ahead</h2>
+<ul>
+  <li><b>Real training, measured.</b> The papers above train end to end and report gains &mdash; LOOP on AppWorld,
+  DreamGym, MUA-RL, SWE-Gym. trace2wm telemetry forecasts; it does not train.</li>
+  <li><b>Scale.</b> Corpora of 1.3 million trajectories, 90,000 synthetic trajectories, dual-control simulators with
+  annotated error rates. trace2wm was built on one project's corpora and mistakes; another team's logs will break
+  assumptions ours did not.</li>
+  <li><b>Theory of retrying versus training.</b> The literature has one for math and code; trace2wm's own equal-spend
+  comparison is not built yet, so its training side still rests on published ranges.</li>
+  <li><b>Learnability from someone else's logs.</b> We found no method that estimates learnability offline from another
+  policy's logs &mdash; which is what trace2wm's learnability stage attempts, and so remains unvalidated.</li>
+</ul>
+
+<h2 id="references">References</h2>
+<ol class="refs">
+  <li id="ref-1">Chen, B. et al. &ldquo;FireAct: Toward Language Agent Fine-tuning.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.05915">arXiv:2310.05915</a></li>
+  <li id="ref-2">Zeng, A. et al. &ldquo;AgentTuning: Enabling Generalized Agent Abilities for LLMs.&rdquo; 2023. <a href="https://arxiv.org/abs/2310.12823">arXiv:2310.12823</a></li>
+  <li id="ref-3">Pan, J. et al. &ldquo;Training Software Engineering Agents and Verifiers with SWE-Gym.&rdquo; 2024. <a href="https://arxiv.org/abs/2412.21139">arXiv:2412.21139</a></li>
+  <li id="ref-4">Song et al. &ldquo;Agent Data Protocol: Unifying Datasets for Diverse, Effective Fine-tuning of LLM Agents.&rdquo; 2025. <a href="https://arxiv.org/abs/2510.24702">arXiv:2510.24702</a></li>
+  <li id="ref-5">Chen, K. et al. &ldquo;Reinforcement Learning for Long-Horizon Interactive LLM Agents&rdquo; (LOOP). 2025. <a href="https://arxiv.org/abs/2502.01600">arXiv:2502.01600</a></li>
+  <li id="ref-6">Zhao, W. et al. &ldquo;MUA-RL: Multi-turn User-interacting Agent Reinforcement Learning for agentic tool use.&rdquo; 2025. <a href="https://arxiv.org/abs/2508.18669">arXiv:2508.18669</a></li>
+  <li id="ref-7">Chen, Z. et al. &ldquo;Agent-FLAN: Designing Data and Methods of Effective Agent Tuning for Large Language Models.&rdquo; 2024. <a href="https://arxiv.org/abs/2403.12881">arXiv:2403.12881</a></li>
+  <li id="ref-8">Foster, T. et al. &ldquo;Learning to Reason at the Frontier of Learnability.&rdquo; 2025. <a href="https://arxiv.org/abs/2502.12272">arXiv:2502.12272</a></li>
+  <li id="ref-9">Wang, Z. et al. RAGEN. 2025. <a href="https://arxiv.org/abs/2504.20073">arXiv:2504.20073</a></li>
+  <li id="ref-10">Ruan, Y. et al. &ldquo;Identifying the Risks of LM Agents with an LM-Emulated Sandbox&rdquo; (ToolEmu). 2023. <a href="https://arxiv.org/abs/2309.15817">arXiv:2309.15817</a></li>
+  <li id="ref-11">Yao, S. et al. &ldquo;τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains.&rdquo; 2024. <a href="https://arxiv.org/abs/2406.12045">arXiv:2406.12045</a></li>
+  <li id="ref-12">Barres, V. et al. &ldquo;τ²-Bench: Evaluating Conversational Agents in a Dual-Control Environment.&rdquo; 2025. <a href="https://arxiv.org/abs/2506.07982">arXiv:2506.07982</a></li>
+  <li id="ref-13">Li, Y. et al. &ldquo;Simulating Environments with Reasoning Models for Agent Training&rdquo; (Simia). 2025. <a href="https://arxiv.org/abs/2511.01824">arXiv:2511.01824</a></li>
+  <li id="ref-14">Brown, B. et al. &ldquo;Large Language Monkeys: Scaling Inference Compute with Repeated Sampling.&rdquo; 2024. <a href="https://arxiv.org/abs/2407.21787">arXiv:2407.21787</a></li>
+  <li id="ref-15">Snell, C. et al. &ldquo;Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters.&rdquo; 2024. <a href="https://arxiv.org/abs/2408.03314">arXiv:2408.03314</a></li>
+  <li id="ref-16">Chen, F., Raventos, A., Cheng, N., Ganguli, S. &amp; Druckmann, S. &ldquo;Rethinking Fine-Tuning when Scaling Test-Time Compute: Limiting Confidence Improves Mathematical Reasoning.&rdquo; 2025. <a href="https://arxiv.org/abs/2502.07154">arXiv:2502.07154</a></li>
+  <li id="ref-17">Yue, Y. et al. &ldquo;Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?&rdquo; 2025. <a href="https://arxiv.org/abs/2504.13837">arXiv:2504.13837</a></li>
+  <li id="ref-18">Stroebl, B. et al. &ldquo;Inference Scaling fLaws: The Limits of LLM Resampling with Imperfect Verifiers.&rdquo; 2024. <a href="https://arxiv.org/abs/2411.17501">arXiv:2411.17501</a></li>
+  <li id="ref-19">Zhu, Y. et al. &ldquo;Establishing Best Practices for Building Rigorous Agentic Benchmarks&rdquo; (ABC). 2025. <a href="https://arxiv.org/abs/2507.02825">arXiv:2507.02825</a></li>
+  <li id="ref-20">Kapoor, S. et al. &ldquo;AI Agents That Matter.&rdquo; 2024. <a href="https://arxiv.org/abs/2407.01502">arXiv:2407.01502</a></li>
+  <li id="ref-21">Dominguez-Olmedo, R. et al. &ldquo;Training on the Test Task Confounds Evaluation and Emergence.&rdquo; 2024. <a href="https://arxiv.org/abs/2407.07890">arXiv:2407.07890</a></li>
+  <li id="ref-22">Snell, C. et al. &ldquo;Predicting Emergent Capabilities by Finetuning.&rdquo; 2024. <a href="https://arxiv.org/abs/2411.16035">arXiv:2411.16035</a></li>
+  <li id="ref-23">Ruan, Y. et al. &ldquo;Observational Scaling Laws and the Predictability of Language Model Performance.&rdquo; 2024. <a href="https://arxiv.org/abs/2405.10938">arXiv:2405.10938</a></li>
+  <li id="ref-24">Farn, N. &amp; Shin, R. &ldquo;ToolTalk: Evaluating Tool-Usage in a Conversational Setting.&rdquo; 2023. <a href="https://arxiv.org/abs/2311.10775">arXiv:2311.10775</a></li>
+</ol>
+
+<h2 id="citation">Citation</h2>
+<p>Cited as: Qu, Shuhui. (Oct 2026). From agent logs to training: what the papers measure, and what they skip. Shuhui
+Qu's blog. https://shuhuiq.github.io/blog/review-agent-logs-training.html</p>
+<pre class="cite-block">@article{qu2026agentlogstraining,
+  title   = "From agent logs to training: what the papers measure, and what they skip",
+  author  = "Qu, Shuhui",
+  journal = "shuhuiq.github.io",
+  year    = "2026",
+  month   = "Oct",
+  url     = "https://shuhuiq.github.io/blog/review-agent-logs-training.html"
+}</pre>
+
+</div>
+</body>
+</html>

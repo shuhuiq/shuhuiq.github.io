@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can RL teach a model to say "not possible"? · Shuhui Qu</title>
+<meta name="description" content="Two small RL experiments on teaching a model to admit that a task cannot be done, without making things up.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-rl lg" aria-hidden="true"><svg><use href="../icons.svg#i-nope"/></svg></span>
+<h1>Can RL teach a model to say &ldquo;not possible&rdquo;?</h1>
+<div class="meta">October 2026</div>
+
+<p>Ask an agent to plan something that cannot be done, and it rarely says so. It writes a plan that quietly breaks one
+of your limits, or it keeps searching until it runs out of tokens. I ran two small reinforcement learning (RL)
+experiments to see which reward teaches a model to say &ldquo;not possible&rdquo; when that is true, and only when
+that is true. The short answer: a reward can only teach what it can check.</p>
+
+<h3>The task</h3>
+
+<p>Each task asks for a one-day outing for a group: pick one option in each of four slots (transport, museum, lunch,
+evening), four options per slot, so 256 combinations. Every task has three limits: a total budget, a finishing time,
+and one excluded tag (&ldquo;no option may contain nuts&rdquo;). About a third of the tasks are impossible. Because the
+world is closed, a program can enumerate all 256 combinations, so I always know whether &ldquo;not possible&rdquo; is
+the right answer.</p>
+
+<p>In both experiments the policy was trained with GRPO (a group of answers per task, each scored against the group
+average), with LoRA adapters on <a href="https://thinkingmachines.ai/tinker/">Tinker</a>. The test set, the rewards and
+the reading rules were written down before training, and each test set was used once.</p>
+
+<h3>Experiment 1: a judge, a checker, and both</h3>
+
+<p>Qwen3-8B was trained for 20 steps (128 answers per step) under four rewards:</p>
+<ul>
+  <li><b>Judge.</b> An LLM (gpt-6-luna) reads the task and the answer and decides. It can search the catalog itself,
+  so it can tell whether &ldquo;not possible&rdquo; is correct.</li>
+  <li><b>Checker.</b> Code checks only what the answer names. If the answer gives a plan, it can check the budget,
+  the time and the excluded tag. It never searches the catalog, so it cannot confirm that <i>no</i> plan exists; for
+  an answer of &ldquo;not possible&rdquo; it says &ldquo;cannot verify&rdquo;. Two versions: &ldquo;cannot
+  verify&rdquo; scores 0, or &minus;0.5.</li>
+  <li><b>Checker, then judge.</b> The checker decides where it can; the judge decides the rest.</li>
+</ul>
+
+<table>
+  <tr><th>reward</th><th>says &ldquo;not possible&rdquo; on impossible tasks</th><th>solves possible tasks</th><th>says &ldquo;not possible&rdquo; on possible tasks</th><th>tokens per answer</th></tr>
+  <tr><td>none (base model, sampled twice)</td><td>9&ndash;13 %</td><td>74&ndash;76 %</td><td>4 %</td><td>1,210</td></tr>
+  <tr><td>judge</td><td><b>72.5 %</b></td><td>84 %</td><td>7 %</td><td><b>645</b></td></tr>
+  <tr><td>checker, &ldquo;cannot verify&rdquo; = 0</td><td>5 %</td><td><b>90 %</b></td><td>1 %</td><td>1,176</td></tr>
+  <tr><td>checker, &ldquo;cannot verify&rdquo; = &minus;0.5</td><td>11 %</td><td>78 %</td><td>6 %</td><td>1,193</td></tr>
+  <tr><td>checker, then judge</td><td>44 %</td><td>89 %</td><td>3 %</td><td>1,022</td></tr>
+</table>
+
+<p>The judge taught the model to stop and say &ldquo;not possible&rdquo;; its answers also halved in length. The
+checker taught it nothing about refusing, while giving the best results on tasks that can be done. The reason is in
+what each reward pays. Under the checker, an honest &ldquo;not possible&rdquo; scores exactly the same as running out
+of tokens, since neither can be checked without a search, while a plan that breaks one of the three limits still
+earns +1/3. Nothing in that reward is worth more than admitting, so the model never moved toward it. OpenAI's
+<a href="https://openai.com/index/why-language-models-hallucinate/">Why language models hallucinate</a> makes the same
+point about benchmarks: when &ldquo;I don't know&rdquo; scores zero and a guess sometimes scores, guessing always
+wins.</p>
+
+<p>The judge had a price as well: on possible tasks the trained model said &ldquo;not possible&rdquo; more often (from
+4 % to 7 %), usually after an arithmetic slip.</p>
+
+<h3>Experiment 2: make &ldquo;not possible&rdquo; checkable</h3>
+
+<p>If the checker cannot confirm a refusal, ask the model to prove it. The proof splits the options of one slot into
+cases and closes each case with a reason that can be checked from the catalog: a fixed option carries the excluded
+tag; or the cheapest allowed choice in every other slot already breaks the budget; or the quickest already finishes
+too late. A case can be split again on a second slot. Checking a line means scanning four options per slot, never
+the 256 combinations. I tested that the checker is sound: on possible tasks, no proof &mdash; random, or the strongest
+honest attempt &mdash; is ever accepted. The reward: +1 for a proof whose every line is true and whose cases cover
+everything, &minus;1 for any false line, 0 for an incomplete proof. The control reward gives every &ldquo;not
+possible&rdquo; 0.</p>
+
+<p><b>The first model could not do it.</b> Qwen3-8B wrote no valid proof in 72 answers to impossible tasks, so the +1 never appears and
+RL has nothing to strengthen. I switched to Inkling-Small, a reasoning model, and trained its reasoning tokens as
+well.</p>
+
+<p><b>The second model was already honest.</b> Before any training, Inkling-Small said &ldquo;not possible&rdquo; on
+about 90 % of impossible tasks and never on a possible one. What it lacked was correct evidence. Here is one task (9
+people, start 13:00, budget $665, finish by 17:30, no nuts), where the conclusion is right and one line is false:</p>
+
+<pre>FINAL PLAN: NOT POSSIBLE — no allowed combination satisfies both the $665 budget and the 17:30 deadline.
+PROOF:
+CASE E1: cheapest T3 M2 L2 E1 = $972 &gt; $665
+CASE E2: contains nuts
+CASE E3: SPLIT Transport
+CASE E3 T3: shortest T3 M2 L2 E3 ends 19:00 &gt; 17:30
+...</pre>
+
+<p>M2 is the slowest museum (145 minutes), not the quickest. With the quickest museum and lunch, T3 + M1 + L1 + E3
+takes 260 minutes and ends at 17:20, in time. The conclusion survives only because that combination costs $828. On
+the test set, about one &ldquo;not possible&rdquo; in five came with a proof that checked out, and about one in three
+contained a false step &mdash; most often an option called &ldquo;cheapest&rdquo; or &ldquo;quickest&rdquo; that was
+not. A grader that checks only the conclusion would mark all of these correct.</p>
+
+<p><b>My first checker was wrong in a different way.</b> It was strict about notation and accepted none of the 68
+proofs Inkling-Small wrote on the development tasks. A checker with the same soundness that tolerates notation
+&mdash; a slot letter instead of its name, the arithmetic shown on the line, cases nested one level deeper &mdash;
+accepted 15 of them. Trained against the strict one, RL would have taught a notation, and I would have reported that
+the model cannot prove infeasibility.</p>
+
+<p><b>Ten steps of RL changed nothing.</b> Both rewards, 10 steps each, tested once on 60 new tasks (4 answers per
+task):</p>
+
+<table>
+  <tr><th>Inkling-Small</th><th>says &ldquo;not possible&rdquo; on impossible tasks</th><th>with a proof that checks out</th><th>proofs with a false step</th><th>solves possible tasks</th></tr>
+  <tr><td>no training (sampled twice)</td><td>89&ndash;95 %</td><td>15&ndash;19 %</td><td>36&ndash;41 %</td><td>96&ndash;99 %</td></tr>
+  <tr><td>control reward</td><td>89 %</td><td>14 %</td><td>32 %</td><td>96 %</td></tr>
+  <tr><td>proof reward</td><td>90 %</td><td>19 %</td><td>38 %</td><td>96 %</td></tr>
+</table>
+
+<p>The reward differed between answers in up to half of the task groups each step, so there was a learning signal, and the model did not move. On the training
+samples the share of proofs with a false step even rose, from 29 % to 36 %. With 10 steps and one seed I cannot tell
+&ldquo;too little training&rdquo; from &ldquo;this reward does not teach it&rdquo;.</p>
+
+<h3>What I take from this</h3>
+<ol>
+  <li><b>A reward teaches only what it can check.</b> A checker that cannot confirm &ldquo;impossible&rdquo; pays an
+  honest refusal the same as giving up, and RL learns neither to stop nor to admit.</li>
+  <li><b>A checker that is strict about format trains format.</b> Before training, find out what the checker rejects
+  that is actually correct.</li>
+  <li><b>Check the evidence, not only the conclusion.</b> A model can be right for the wrong reasons a third of the
+  time, and a conclusion-only grader will never see it.</li>
+  <li><b>Measure the base model first.</b> The behaviour I set out to teach was already there in the stronger model;
+  the gap was somewhere else.</li>
+</ol>
+
+<p class="caveat">Limits of these results: a small closed world, English only, one training seed per reward, 10&ndash;20
+steps, about $50 of compute in total. The experiments were pre-registered, and both negative results are reported as
+measured.</p>
+
+</div>
+</body>
+</html>
