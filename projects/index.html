@@ -18,37 +18,39 @@
 
 <div class="container post">
   <h1>Projects</h1>
-  <p class="meta">Three products for teams that put AI agents to work: check what the agent does, pay less for the
-  answers, and know whether training it is worth the money.</p>
+  <p class="meta">Three products for people and teams who put AI to work: check an AI-made plan before
+  you follow it, pay less for LLM answers, and know whether training an agent is worth the money.</p>
 
   <section class="prod" id="morpheus">
     <div class="prod-top"><span class="ico logo lg" aria-hidden="true"><img src="../logos/morpheus.svg" alt=""></span>
-      <div><div class="prod-label">Morpheus &middot; for teams that let AI agents plan and act</div>
-      <h2 class="prod-h">Know which of your requirements an agent breaks &mdash; before it acts.</h2></div>
+      <div><div class="prod-label">Morpheus &middot; morpheusplan.com &middot; invite-only beta</div>
+      <h2 class="prod-h">A second opinion for every AI-made plan.</h2></div>
     </div>
-    <p class="prod-sub">Morpheus checks every step an AI agent plans or takes against the requirements you gave it,
-    and tells you, for each requirement, whether it is met, broken, or cannot be checked &mdash; with the evidence.</p>
+    <p class="prod-sub">Paste a plan from anywhere &mdash; ChatGPT, Claude, Gemini, a friend's text or your own notes
+    &mdash; and write your rules the way you would say them: &ldquo;home by 6&rdquo;, &ldquo;$60 max&rdquo;. Morpheus
+    checks every line against every rule. It doesn't just say &ldquo;looks good&rdquo;: it points to the exact line
+    that breaks, says by how much, and fixes it without wrecking the rest.</p>
     <ul class="prod-list">
-      <li><b>Check.</b> Your requirements are kept across the whole conversation, and a verdict rests only on what
-      code can confirm &mdash; the plan's own &ldquo;total: within budget&rdquo; never counts. When it cannot tell, it
-      says so instead of guessing. <span class="proof">On a blind test it let none of 8 planted budget overruns through (2 flagged as
-      broken, 6 as cannot-check).</span></li>
-      <li><b>Stop.</b> Inside Claude Code, Codex and Cursor it blocks the tool call that would break a rule you set
-      &mdash; a new dependency, a force push, an edit to the file that computes your metric &mdash; and checks the
-      agent's &ldquo;done&rdquo; before you believe it. <span class="proof">Replayed on 4,750 real tool calls: 10
-      blocks, all correct.</span></li>
-      <li><b>Fix.</b> When a step breaks a requirement, it proposes alternatives at that step and re-checks them
-      before you see them.</li>
-      <li><b>Record.</b> For ML experiment loops, it turns a run into a record anyone can re-verify: a frozen
-      evaluator, the noise across seeds, and an audit for metric gaming.</li>
+      <li><b>An independent check.</b> The plan is not graded by the AI that wrote it. A rule counts as met only when
+      our checker and a second AI reader agree. <span class="proof">In planted-mistake tests the default check found
+      19&ndash;20 of 20 hidden mistakes and called no broken plan fine.</span></li>
+      <li><b>The exact line, and by how much.</b> Not &ldquo;might be a bit tight&rdquo;, but &ldquo;Sunday 7 h 10 min,
+      10 min over your 7 h limit&rdquo;, on the line where it happens.</li>
+      <li><b>Fixes that keep the plan whole.</b> Every fix is checked again before you see it; a fix that drops lunch or
+      only edits a number to pass is never offered. <span class="proof">With simulated users, 9 of 10 tasks ended with
+      every rule met, and no broken rule was marked met by the plan's own numbers; a task cost $0.116.</span></li>
+      <li><b>It says who decided.</b> Calculated, judged by AI, or confirmed by you: met, not met, unclear, you
+      confirmed or not checked. It never fills in a missing fact; it marks it &ldquo;unclear&rdquo; and asks.</li>
+      <li><b>Also for AI agents.</b> The same checker reads each command a coding agent is about to run, inside Claude
+      Code, Codex and Cursor, and stops the ones that break a rule you set. For ML experiments, it keeps a record anyone
+      can re-check: a locked scoring program and at least 3 runs per change. <span class="proof">Replayed on 4,743 real
+      tool calls from 20 coding-agent sessions: it blocked the 10 that broke the rule and none that didn't (after one
+      fix). The experiment record is tested on a toy example, not yet on a real training run.</span></li>
     </ul>
-    <div class="prod-live"><p><b>Try it:</b> <a href="https://morpheusplan.com">morpheusplan.com</a> is the
-    web product: a second opinion for any AI-made plan &mdash; from ChatGPT, Claude, Gemini, a friend or your own
-    notes. It checks every line against your rules, points to the exact line that breaks one and by how much, and offers
-    only fixes that are checked again and keep the rest of the plan. Invite-only beta, free during the beta.
-    <span class="proof">In planted-mistake tests the default check found 19&ndash;20 of 20 hidden mistakes and called
-    no broken plan fine. With simulated users, 9 of 10 tasks ended with every rule met, no broken rule was marked met by
-    the plan's own numbers, and a task cost $0.116 (internal tests, October 2026).</span></p></div>
+    <div class="prod-live"><p><b>Try it:</b> <a href="https://morpheusplan.com">morpheusplan.com</a>. Invite-only beta,
+    free during the beta; ask for an invite at <a href="mailto:info@morpheusplan.com">info@morpheusplan.com</a>.
+    <span class="proof">Numbers from internal tests, October 2026: planted mistakes, and simulated users (AI agents),
+    not real users.</span></p></div>
     <p class="prod-foot"><b>Where it came from:</b> a planning engine for science
     (<i>Morphism-Oriented Reasoning with Provable, Honest, Epistemic Understanding for Science</i>) that builds a
     knowledge graph from papers &mdash; 18,600+ actions from 665 documents, every one traced to its page &mdash;
