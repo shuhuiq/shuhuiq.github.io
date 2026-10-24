@@ -184,8 +184,8 @@ ul.pubs .t { color: #333; }
   height: 48px;
   border-radius: 13px;
   color: #fff;
-  background: linear-gradient(140deg, var(--a), var(--b));
-  box-shadow: 0 6px 14px -6px var(--b), inset 0 1px 0 rgba(255, 255, 255, .25);
+  background: var(--b);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .35);
 }
 .ico svg { width: 26px; height: 26px; }
 .ico.sm { width: 40px; height: 40px; border-radius: 11px; }
