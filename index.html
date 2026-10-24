@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shuhui Qu</title>
-<meta name="description" content="Shuhui Qu — reinforcement learning and LLM agents whose answers can be checked.">
+<meta name="description" content="Shuhui Qu — reinforcement learning and AI agents whose answers can be checked. Builds Morpheus (morpheusplan.com), a second opinion for AI-made plans, plus Honeyguide and Trace Check-up.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -51,8 +51,12 @@
   outcome, as in the chip-design environments my team builds, the reward can be trusted. Most agent tasks can only be
   partly checked, and the usual answer is to ask another model. In my own measurements, the LLM judges that agreed most
   with human labels still accepted plans that broke the user's budget &mdash; a shortcut an RL policy could learn to
-  exploit. So I build verifiers that pass only what code can confirm (arithmetic, dates, quoted text) and say
-  &ldquo;cannot verify&rdquo; otherwise.</p>
+  exploit. So I build checkers that do not just say &ldquo;looks good&rdquo;.
+  <a href="https://morpheusplan.com">Morpheus</a> checks an AI-made plan line by line, points to the exact line that
+  breaks a rule and by how much, and says &ldquo;unclear&rdquo; instead of guessing. The same question about money led
+  to <a href="projects/#honeyguide">Honeyguide</a>, which measures what a cheaper model setup would save and lose before
+  a team switches, and to <a href="trace-checkup/">Trace Check-up</a>, which says whether an agent's logs are ready to
+  train on.</p>
   <p>The other thing I have learned is that a number is only as good as the way it was measured. I freeze held-out sets,
   write down what counts as a result before the run, measure once, and report the runs that did not work.</p>
 </div>
@@ -73,9 +77,10 @@
     </div>
     <div class="card">
       <span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span>
-      <div class="card-title">Verifiers and evaluation</div>
-      <p>Checkers that pass only what code can confirm, and evaluations built to be trusted: blind labels, written
-      criteria, one measurement.</p>
+      <div class="card-title">Checking AI's work</div>
+      <p>A second opinion for AI-made plans (Morpheus), the cost of a cheaper model measured before you switch
+      (Honeyguide), and logs checked before training (Trace Check-up). Evaluations built to be trusted: written
+      criteria, blind labels, one measurement.</p>
     </div>
   </div>
 </div>
@@ -168,9 +173,10 @@
   <div class="sectitle">bio</div>
   <p>Shuhui Qu is a machine learning researcher and engineer working on reinforcement learning and on AI agents whose
   answers can be checked. At Samsung Display American Lab, Shuhui is a Senior Staff ML Engineer and the project lead
-  for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds Morpheus,
-  which checks an AI agent's plans and actions against the user's requirements before it acts (live at
-  morpheusplan.com). Shuhui also builds Honeyguide and Trace Check-up. PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
+  for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds Morpheus
+  (morpheusplan.com), a second opinion for any AI-made plan, and two smaller tools: Honeyguide, which measures what a
+  cheaper LLM setup would save and lose before a team switches, and Trace Check-up, which says whether an agent's logs
+  are ready for training. PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
 </div>
 
 <div class="container" id="projects">
