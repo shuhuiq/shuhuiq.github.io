@@ -1,136 +1,596 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trace Check-up · Shuhui Qu</title>
-<meta name="description" content="A small tool that runs on your own computer; it is open source, and the code is published when the first team asks for it. It reads your AI agent's log and says what to record, whether you have enough, and how training compares with letting the agent try again, counted in tries.">
-<link rel="stylesheet" href="../style.css">
-</head>
-<body>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%236366f1%22/%3E%3Cpath%20d%3D%22M13%2044h26M13%2053h15%22%20fill%3D%22none%22%20stroke%3D%22%23e0e7ff%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M11%2025h11l7%208%2020-21%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%226.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
+<meta name="description" content="A neutral check-up for AI-agent logs, run on your own computer: what to record, how much is enough, and how training compares with letting the agent try again, counted in tries.">
+<style>:root{
+  color-scheme:light;
+  --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eceff3; --line:#dce1e8;
+  --ink:#12161c; --ink-2:#4b5261; --ink-3:#5f6776;
+  --accent:#1d5fc4; --accent-wash:rgba(29,95,196,.08); --on-accent:#fff;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --none:#8a93a3;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --f-cap:12px; --f-ui:13px; --f-body:15px; --f-h2:18px; --f-h1:24px; --f-fig:32px;
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px;
+  --r1:6px; --r2:10px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0f1216; --surface:#161a20; --surface-2:#1e232b; --line:#2a3039;
+  --ink:#eef1f5; --ink-2:#b2b9c5; --ink-3:#8b94a3;
+  --accent:#6fa4ff; --accent-wash:rgba(111,164,255,.12); --on-accent:#0f1216; --crit:#e85d5d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1216; --surface:#161a20; --surface-2:#1e232b; --line:#2a3039;
+  --ink:#eef1f5; --ink-2:#b2b9c5; --ink-3:#8b94a3;
+  --accent:#6fa4ff; --accent-wash:rgba(111,164,255,.12); --on-accent:#0f1216; --crit:#e85d5d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:var(--f-body)/1.55 var(--sans)}
+button,select,input{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+h1,h2,h3{text-wrap:balance;margin:0}
+code,.mono{font-family:var(--mono);font-size:.92em}
+.num{font-variant-numeric:tabular-nums}
 
-<nav class="topnav">
-  <div class="container navrow">
-    <a class="brand" href="../">Shuhui Qu</a>
-    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="../blog/">Blog</a></span>
-  </div>
-</nav>
 
-<div class="container post">
-<span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
-<div class="prod-label">Trace Check-up &middot; a neutral check-up for AI-agent logs</div>
-<h1>Check your agent's logs before you pay to train it.</h1>
-<p class="note">A small tool that runs on your own computer. Give it the log your agent already writes. In about a
-minute: what trying again fixes, what training might add, and what the log is missing.</p>
-<p><a href="example-report.html">See an example report</a> (on a made-up log; also in <a href="example-report.zh.html" lang="zh">中文</a>). It is open source: the code is published when the first team asks for it.</p>
+.bar{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp4);align-items:center;padding:var(--sp3) var(--sp5);background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .brand{font-weight:650;font-size:var(--f-ui);letter-spacing:.01em}
+.bar .meta{color:var(--ink-3);font-size:var(--f-cap);display:flex;flex-wrap:wrap;gap:var(--sp3)}
 
-<h3>From log to next step</h3>
-<div class="cards">
-  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-log"/></svg></span>
-    <div class="card-title">1. Give it your log</div>
-    <p>The file your agent already writes. Nothing new to set up.</p>
-    <!-- picture slot 1: see HANDOFF §4 -->
-  </div>
-  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
-    <div class="card-title">2. Checked in about a minute</div>
-    <p>Measured on your own log, not on someone else's log.</p>
-    <!-- picture slot 2: see HANDOFF §4 -->
-  </div>
-  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-scale"/></svg></span>
-    <div class="card-title">3. Train, or try again</div>
-    <p>Side by side, counted in tries. Or &ldquo;can't tell yet&rdquo;, and what is missing.</p>
-    <!-- picture slot 3: see HANDOFF §4 -->
-  </div>
-</div>
+.bar-top,.bar-sub{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp1) var(--sp4)}
+.bar:has(.bar-top){padding-top:var(--sp1);padding-bottom:var(--sp2);row-gap:0}
+.bar-top .brand{color:var(--ink);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.bar-top .brand:hover{text-decoration:underline}
+.bar .lang{margin-left:auto;font-size:var(--f-ui);color:var(--ink-2);text-decoration:none;border:1px solid var(--line);
+  border-radius:999px;padding:0 14px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;
+  justify-content:center;white-space:nowrap}
+.bar .lang:hover{color:var(--ink);border-color:var(--ink-3)}
+.bar .acct{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--sp4);font-size:var(--f-ui)}
+.bar .acct a{color:var(--ink-2);text-decoration:none;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+.bar .acct a:hover{color:var(--ink);text-decoration:underline}
+.bar .acct .who{color:var(--ink-3)}
+.bar .acct form{display:inline;margin:0}
+.bar .linkish{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);cursor:pointer;text-decoration:underline;
+  min-height:44px;min-width:44px}
+@media (max-width:640px){.bar-top .acct{flex:1 0 100%}.bar-top .acct .who{min-width:0;overflow-wrap:anywhere}}
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--sp6);padding:var(--sp5)}
+.rail{position:sticky;top:var(--sp4);align-self:start;display:flex;flex-direction:column;gap:2px;font-size:var(--f-ui)}
+.rail a{display:flex;align-items:center;gap:var(--sp2);color:var(--ink-2);text-decoration:none;padding:5px 8px;border-radius:var(--r1)}
+.rail a:hover{background:var(--surface-2);color:var(--ink)}
+.rail .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.rail .sep{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin:var(--sp3) 8px var(--sp1)}
+.main{display:flex;flex-direction:column;gap:var(--sp7);min-width:0}
+@media (max-width:860px){.shell{grid-template-columns:1fr}.rail{position:static;flex-direction:row;flex-wrap:wrap}.rail .sep{display:none}}
 
-<h3>Training costs money. Trying again costs money too.</h3>
-<p>Pick on a hunch and you may pay for the wrong one. Check your log first.</p>
 
-<h3>What it answers</h3>
-<ul class="prod-list">
-  <li><b>What to record.</b> The eleven things a useful log records, each marked recorded, partly recorded or
-  missing: every action and what came back, a task name, whether each conversation worked and who decided that, the
-  tokens each one used, and more. <span class="proof">The full list, as the report shows it on a made-up log:
-  <a href="example-report.html#p-record">What your log records</a>.</span></li>
-  <li><b>How much is enough.</b> Each task tried 8 times, each marked worked or failed: then you can see how much
-  trying again already fixes. And about 5,000 conversations that worked, each saying who decided it worked, before
-  training. <span class="proof">Below this, published results go both ways: training made some models better and
-  some worse (<a href="https://arxiv.org/abs/2508.18669">MUA-RL</a>;
-  <a href="https://arxiv.org/abs/2504.13958">ToolRL</a>). The line is a rough guide, not a measured minimum. Many
-  different tasks tell you more than many copies of a few.</span></li>
-  <li><b>Train, or try again.</b> Two cards side by side, counted in tries: what letting the agent try again does,
-  measured on your log, and a rough range for training a small model, from published studies.
-  <span class="proof">Each card says how sure it is, what it rests on and what would change it. With too little to go
-  on, it says &ldquo;can't tell yet&rdquo; and what to collect.</span></li>
-</ul>
+.sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--sp2) var(--sp4);border-bottom:1px solid var(--line);padding-bottom:var(--sp2);margin-bottom:var(--sp4)}
+.sec-head h2{font-size:var(--f-h2);font-weight:650}
+.sec-head p{flex-basis:100%;margin:0;color:var(--ink-2);font-size:var(--f-ui);max-width:75ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp4)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-cap);font-weight:600;color:var(--ink);background:var(--surface-2);border-radius:999px;padding:2px 9px 2px 3px;white-space:nowrap;line-height:18px}
+.badge i{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font-style:normal;font-size:10px;font-weight:700;color:#fff}
+.badge.warn i,.badge.inv i{color:#12161c}
+.verdict{display:flex;flex-direction:column;gap:var(--sp4)}
+.verdict h1{font-size:var(--f-h1);font-weight:650;margin:var(--sp2) 0}
+.verdict p{margin:0;color:var(--ink-2);max-width:62ch}
+.figs{display:flex;flex-wrap:wrap;gap:var(--sp4) var(--sp6);border-top:1px solid var(--line);padding-top:var(--sp4)}
+.fig .v{font-size:var(--f-fig);font-weight:600;line-height:1.1}
+.fig .l{font-size:var(--f-cap);color:var(--ink-3);max-width:14ch}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp3)}
+.tile .l{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font-size:var(--f-fig);font-weight:600;line-height:1.2;margin:var(--sp1) 0}
+.tile .d{font-size:var(--f-ui);color:var(--ink-2)}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r2);background:var(--surface);overflow:hidden}
+.row{display:grid;grid-template-columns:28px minmax(0,1.1fr) 120px minmax(0,1.6fr);gap:var(--sp3);padding:var(--sp3) var(--sp4);border-top:1px solid var(--line);align-items:start;font-size:var(--f-ui)}
+.row:first-child{border-top:0}
+.row .n{color:var(--ink-3);font-variant-numeric:tabular-nums;padding-top:1px}
+.row .t{font-weight:600}
+.row .r{color:var(--ink-2)}
+.row .do{color:var(--ink-3);font-size:var(--f-cap);margin-top:2px}
+.row[data-step='4'] .r + .do{color:var(--ink);font-weight:600}
+.row.check{grid-template-columns:minmax(0,1.3fr) 120px minmax(0,1.2fr) minmax(0,1.2fr)}
+@media (max-width:700px){.row,.row.check{grid-template-columns:1fr}}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:var(--sp4)}
+.chart h3{font-size:var(--f-ui);font-weight:650}
+.chart .cap{font-size:var(--f-cap);color:var(--ink-3);margin:2px 0 var(--sp3)}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart svg text{fill:var(--ink-3);font-size:10px;font-family:var(--sans)}
+.chart svg .lbl{fill:var(--ink-2);font-size:11px}
+.chart .domain{stroke:var(--line)}
+.chart .tick line{stroke:var(--line)}
+.chart .grid line{stroke:var(--line)}
+.chart .grid .domain{display:none}
+.chart .foot{display:flex;justify-content:flex-end;margin-top:var(--sp2)}
+.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:0;font-size:var(--f-cap)}
+table.data{width:100%;border-collapse:collapse;font-size:var(--f-ui);font-variant-numeric:tabular-nums}
+table.data th{text-align:left;font-weight:600;color:var(--ink-3);font-size:var(--f-cap);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.data td{padding:6px 8px;border-bottom:1px solid var(--line)}
+table.data td.r,table.data th.r{text-align:right}
+.scroll{overflow-x:auto}
+.filters{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp3);align-items:center;margin-bottom:var(--sp3);font-size:var(--f-ui)}
+.filters select,.filters input[type=search]{padding:5px 8px;border:1px solid var(--line);border-radius:var(--r1);background:var(--surface);color:var(--ink);font-size:var(--f-ui)}
+.filters label{display:inline-flex;gap:6px;align-items:center;color:var(--ink-2)}
+.filters .count{color:var(--ink-3);margin-left:auto;font-size:var(--f-cap)}
+.convs .row{grid-template-columns:24px minmax(0,1.2fr) minmax(0,1fr) 110px minmax(0,1.3fr) minmax(0,1.2fr);cursor:pointer;align-items:center}
+.convs .row:hover{background:var(--surface-2)}
+.convs .row.open{background:var(--accent-wash)}
+.convs .hdr{cursor:default;font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.convs .hdr:hover{background:transparent}
+@media (max-width:760px){.convs .row{grid-template-columns:24px 1fr}}
+.steps-v{list-style:none;margin:var(--sp3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp3)}
+.steps-v li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--sp2)}
+.steps-v .k{color:var(--ink-3);font-variant-numeric:tabular-nums;font-size:var(--f-ui)}
+.steps-v .user{font-size:var(--f-cap);color:var(--ink-2);margin-bottom:2px}
+.steps-v .call{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:var(--f-ui)}
+.steps-v .res{font-size:var(--f-cap);color:var(--ink-2);margin-top:2px;word-break:break-word}
+.steps-v .flag{font-size:var(--f-cap);color:var(--ink);margin-top:2px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--sp4);font-size:var(--f-ui)}
+.cmp .h{font-weight:650;padding:var(--sp2) 0;border-bottom:1px solid var(--line)}
+.cmp .c{padding:var(--sp2) 0;border-bottom:1px solid var(--line);min-width:0;word-break:break-word}
+.cmp .c.part{background:var(--accent-wash);box-shadow:inset 3px 0 0 var(--accent);padding-left:var(--sp2)}
+.btns{display:flex;flex-wrap:wrap;gap:var(--sp2);margin-top:var(--sp3)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r1);padding:5px 12px;cursor:pointer;font-size:var(--f-ui)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.empty{border:1px dashed var(--line);border-radius:var(--r2);padding:var(--sp4);color:var(--ink-2);font-size:var(--f-ui);background:var(--surface)}
+.empty b{color:var(--ink)}
+details.appx{border:1px solid var(--line);border-radius:var(--r2);background:var(--surface)}
+details.appx>summary{cursor:pointer;padding:var(--sp3) var(--sp4);font-weight:650;font-size:var(--f-ui);list-style-position:inside}
+details.appx>div{padding:0 var(--sp4) var(--sp4)}
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--ink);color:var(--bg);font-size:var(--f-cap);padding:6px 9px;border-radius:var(--r1);z-index:9;max-width:320px}
+#tip .k{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:6px}
+#tip .sub{opacity:.75}
+.rule{font-size:var(--f-ui);color:var(--ink-2);max-width:75ch;margin:var(--sp2) 0 var(--sp3)}
 
-<h3>What it says on a made-up log</h3>
-<p>The <a href="example-report.html">example report</a> reads a made-up support log: 16 conversations about 2 tasks,
-each task tried 8 times. Its numbers show how the report reads; they say nothing about your agent.</p>
-<table>
-  <tr><th>Question</th><th>On the made-up log</th></tr>
-  <tr><td>What to record</td><td>10 of 11 things recorded; the optional one, a copy of the records before the agent
-  starts, is not</td></tr>
-  <tr><td>Enough to train?</td><td>11 conversations worked; can't tell below 5,000</td></tr>
-  <tr><td>Train, or try again?</td><td>Can't tell yet: only 2 tasks were tried at least 8 times, and it takes 12</td></tr>
-  <tr><td>Fix first</td><td>The made-up IDs: in 4 of the 16 places where the agent used an ID, nobody had given it
-  and it had not looked it up</td></tr>
-</table>
+.badge.good i,.dot.good{background:var(--good)}.badge.crit i,.dot.crit{background:var(--crit)}
+.badge.warn i,.dot.warn{background:var(--warn)}.badge.inv i,.dot.inv{background:var(--serious)}.badge.none i,.dot.none{background:var(--none)}
+.dot{display:inline-block}
+.verdict .def{font-size:var(--f-cap);color:var(--ink-3);margin:0}
+.charts{margin-top:var(--sp4)}
+details.twin{margin-top:var(--sp2)}
+details.twin>summary{cursor:pointer;color:var(--accent);font-size:var(--f-cap)}
+.row.stage{grid-template-columns:minmax(0,1fr) auto}
+.convs-host .more{margin-top:var(--sp3)}
+@media (max-width:640px){.shell{padding:var(--sp4) 16px}.bar{padding:var(--sp3) 16px}}
+@media print{.rail,.filters,#tip{display:none}.shell{grid-template-columns:1fr}details.appx,details.twin{display:block}}
+.dim{color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:var(--f-cap)}
+.steps-v .args{color:var(--ink-2)}
+.chart svg .mono{font-family:var(--mono)}
+.bar .back{margin-left:auto;font-size:var(--f-ui);color:var(--accent);text-decoration:none;font-weight:600;
+  display:inline-flex;align-items:center;min-height:44px}
+.bar .back:hover{text-decoration:underline}
+form.limits .btns{margin-top:var(--sp3)}
+input.lim,select.lim{width:7em;min-height:44px;text-align:right;font:inherit;font-variant-numeric:tabular-nums;padding:4px 6px;border:1px solid var(--line);border-radius:var(--r1);background:var(--surface);color:var(--ink)}
+a.btn{text-decoration:none;display:inline-block}
+.notice{background:var(--accent-wash);border-radius:var(--r1);padding:var(--sp2) var(--sp3);font-size:var(--f-ui);margin:0 0 var(--sp3)}
 
-<h3 id="run">Running it yourself</h3>
-<p>Trace Check-up is open source: the code is published when the first team asks for it: write to
-<a href="mailto:shuhuiq@stanford.edu">shuhuiq@stanford.edu</a>. Until then, the <a href="example-report.html">example
-report</a> shows what it makes: the page you would get on your own log, here on a made-up one.</p>
-<p class="caveat">It reads OpenAI chat, OpenTelemetry GenAI, Arize Phoenix, LangSmith, Langfuse, Claude Code,
-ShareGPT, Microsoft ToolTalk, CSV / Excel and JSON lines. A log it cannot read gets no report, and it says why.</p>
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:var(--sp4)}
+.card.fc{display:flex;flex-direction:column;gap:var(--sp2)}
+.fc-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--sp2)}
+.fc-top h3{font-size:var(--f-ui);font-weight:650;color:var(--ink-2)}
+.fc-h{font-size:var(--f-h2);font-weight:650;margin:0}
+.card.fc p{margin:0;color:var(--ink-2);font-size:var(--f-ui)}
+.card.fc p.fc-h{color:var(--ink)}
+.fc-based{border-top:1px solid var(--line);padding-top:var(--sp2);font-size:var(--f-cap);color:var(--ink-2)}
+.fc-based ul{margin:var(--sp1) 0 0;padding-left:1.1em}
+.fc-based .lbl,.fc-change .lbl{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.fc-change{font-size:var(--f-ui);color:var(--ink-2)}
 
-<h3>Private by design</h3>
-<ul>
-  <li>It runs on your computer. Nothing is uploaded to us or to anyone else.</li>
-  <li>It makes no network or API call, and runs on the CPU.</li>
-  <li>It reads only the file you give it, and never changes it.</li>
-</ul>
+.card.fc p.fc-risk{border-left:3px solid var(--warn);padding-left:var(--sp2)}
 
-<h3>Neutral by design</h3>
-<ul class="prod-list">
-  <li><b>No training platform pays us,</b> so the advice doesn't depend on which way you go. It includes
-  &ldquo;don't train&rdquo;.</li>
-  <li><b>Every sentence points to its source:</b> a reading from your own log, or a published result named with its
-  paper. When there isn't enough to go on, the report says it can't tell.</li>
-  <li><b>We don't promise that training will help.</b></li>
-</ul>
+details.src{margin-top:var(--sp2);font-size:var(--f-cap);color:var(--ink-3)}
+details.src>summary{cursor:pointer;color:var(--ink-3);list-style-position:inside}
+details.src>summary:hover{color:var(--accent)}
+details.src ul{margin:var(--sp1) 0 0;padding-left:1.1em;color:var(--ink-2)}
+footer.src-file{font-size:var(--f-cap);color:var(--ink-3);border-top:1px solid var(--line);padding-top:var(--sp3)}
 
-<h3>After the report</h3>
-<ul>
-  <li><b>Train it yourself,</b> on any platform you like. A log of conversations and tool calls is enough to train by
-  copying the examples that worked; training by trial and reward also needs a way to score each try. The report
-  shows which conversations worked and which had problems. Not built yet: a list of the ones to train on.</li>
-  <li><b>Compare after training</b> (not built yet): give it the trained agent's new log as well, and it compares it
-  with your untrained agent trying again at the same cost, on the same tasks. With too few tasks, it says it can't
-  tell.</li>
-  <li><b>Or don't train.</b> The advice is the same whichever way you go.</li>
-</ul>
+.fc-if{background:var(--surface-2);border-radius:var(--r1);padding:var(--sp2) var(--sp3);font-size:var(--f-ui);color:var(--ink-2)}
+.fc-if ul{margin:var(--sp1) 0 0;padding-left:1.1em}
+.fc-if .lbl{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
 
-<h3>Questions</h3>
-<p><b>What does &ldquo;at the same cost&rdquo; mean?</b> Letting the agent try a task again until it works takes more
-tries. The report counts on your log how many tries that takes on average, and weighs training against it: one try
-against that many. If your log records tokens, it also says how many tokens one try uses.</p>
-<p><b>When is trying again not an option?</b> When the agent can't tell, as it runs, that a try failed, or when its
-actions change records and aren't safe to do twice, such as a refund paid twice. The report asks you about both.</p>
-<p><b>How sure is the forecast?</b> Each card gives a direction and a range, not a single number. Each card says how sure
-it is, what it rests on and what would change it. With too little to go on, it says it can't tell.</p>
-<p><b>What does my log need to have?</b> Each conversation, every action the agent took and what came back, and
-ideally whether the task worked and who decided that. The report lists what is missing.</p>
-<p><b>Who can see my log?</b> No one. It is read on your computer and not sent anywhere.</p>
+.verdict p.caveat{color:var(--ink);background:var(--surface-2);border-left:3px solid var(--warn);padding:var(--sp2) var(--sp3);border-radius:var(--r1);font-size:var(--f-ui);margin-top:var(--sp2)}
+.fc-if li{margin-bottom:var(--sp1)}
+form.fc-ask{display:flex;flex-wrap:wrap;gap:var(--sp3) var(--sp5);align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp3) var(--sp4);margin-bottom:var(--sp4)}
+form.fc-ask .lbl{flex-basis:100%;font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+form.fc-ask fieldset{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp3);font-size:var(--f-ui)}
+form.fc-ask legend{font-weight:600;margin-bottom:var(--sp1);color:var(--ink)}
+.list + .note{margin:var(--sp3) 0 0;color:var(--ink-2);font-size:var(--f-ui);max-width:75ch}
+.list + .note p{margin:0 0 var(--sp2)}
+.list + .note ol{margin:0 0 var(--sp2);padding-left:1.4em}
+.list + .note strong{color:var(--ink)}
 
-<p class="caveat">Not built yet: comparing a trained agent's log with the untrained one, a list of conversations to
-train on, and counting who decided a success in a table export. It trains nothing. Its checks were built on one
-project's own logs; yours will break assumptions those did not.</p>
+.ex-banner{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:var(--r2);padding:var(--sp4) var(--sp5);max-width:75ch;font-size:var(--f-body)}
+.ex-banner p{margin:0 0 var(--sp2)}
+.ex-banner p:last-child{margin:0}
+.ex-banner .ex-h{font-size:var(--f-h2)}
+.main>.ex-banner + section{margin-top:calc(var(--sp4) - var(--sp7))}
+.bar .meta .ex-name{color:var(--ink);font-weight:600}
 
-<p class="prod-foot">Write-ups: <a href="../blog/train-or-try-again.html">Train, or let it try again?</a> &middot;
-<a href="../blog/before-you-train-on-agent-logs.html">Before you train on your agent's logs</a> &middot; related
-work: <a href="../blog/review-agent-logs-training.html">from agent logs to training</a>.</p>
-</div>
 
-</body>
-</html>
+
+body.site{
+  --bg:#fbfbfa; --surface:#ffffff; --surface-2:#f4f4f2; --line:#e6e6e3;
+  --ink:#0a0a0b; --ink-2:#45454d; --ink-3:#66666f;
+  --accent:#4338ca; --accent-wash:rgba(67,56,202,.07);
+  --cta:#0a0a0b; --on-cta:#ffffff;
+  --wash-1:rgba(99,102,241,.16); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.10);
+  --sans:"Inter","InterVariable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --r-card:16px; --r-pill:999px;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --gap-band:clamp(64px,8vw,112px);
+  --t-xs:12px; --t-s:14px; --t-m:16px; --t-l:18px; --t-xl:24px; --t-h2:clamp(30px,4.2vw,48px); --t-h1:clamp(40px,6vw,72px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.site{
+  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c;
+  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
+  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
+  --cta:#f5f5f6; --on-cta:#09090b;
+  --wash-1:rgba(99,102,241,.22); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14)}}
+:root[data-theme="dark"] body.site{
+  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c;
+  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
+  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
+  --cta:#f5f5f6; --on-cta:#09090b;
+  --wash-1:rgba(99,102,241,.22); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14)}
+
+body.site{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t-m);line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:clip}
+body.site a{color:inherit}
+body.site a.skip{color:var(--on-cta)}
+body.site :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+
+.site-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp3) var(--sp5);min-height:60px;
+  padding:var(--sp2) max(16px,calc((100% - 1200px)/2));position:sticky;top:env(safe-area-inset-top,0px);z-index:3;
+  background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(14px);
+  backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.site-bar .brand{font-weight:700;font-size:var(--t-m);letter-spacing:-.01em;color:var(--ink);text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;min-height:44px}
+.site-bar .brand .mark{width:22px;height:22px;flex:none;display:block}
+.site-bar nav{display:flex;flex-wrap:wrap;gap:var(--sp1) var(--sp2);font-size:var(--t-s);margin-left:auto}
+.site-bar nav a,.site-bar .lang{color:var(--ink-2);text-decoration:none;transition:color .15s var(--ease),background .15s var(--ease)}
+.site-bar nav a{padding:10px 10px;border-radius:8px;min-height:44px;display:inline-flex;align-items:center}
+.site-bar nav a:hover{color:var(--ink);background:var(--accent-wash)}
+.site-bar .lang{font-size:var(--t-s);border:1px solid var(--line);border-radius:var(--r-pill);padding:0 14px;min-height:44px;
+  display:inline-flex;align-items:center}
+.site-bar .lang:hover{color:var(--ink);border-color:var(--ink-3)}
+
+
+.site-main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:0 var(--gap-band);
+  display:flex;flex-direction:column;gap:var(--gap-band)}
+.band{scroll-margin-top:84px}
+.eyebrow{font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  margin:0 0 var(--sp4);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:2px;background:currentColor;flex:none}
+.band h2{font-weight:650;font-size:var(--t-h2);line-height:1.08;letter-spacing:-.03em;margin:0;max-width:24ch;text-wrap:balance}
+.band .sub{color:var(--ink-2);margin:var(--sp4) 0 0;max-width:62ch;font-size:var(--t-l);line-height:1.6}
+.fmt-h{font-family:var(--mono);font-size:var(--t-xs);font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  margin:var(--sp6) 0 var(--sp3)}
+
+
+.hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  grid-template-areas:"head pv" "act pv";grid-template-rows:auto 1fr;align-items:start;
+  column-gap:clamp(32px,5vw,72px);row-gap:var(--sp6);padding:clamp(24px,4vw,48px) 0 var(--sp4)}
+.hero::before{content:"";position:absolute;inset:-60px calc(50% - 50vw) -40px;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(42% 60% at 78% 30%,var(--wash-1),transparent 70%),
+    radial-gradient(36% 50% at 92% 72%,var(--wash-2),transparent 70%),
+    radial-gradient(40% 55% at 10% 0%,var(--wash-3),transparent 70%)}
+.hero-head{grid-area:head}.hero .pv{grid-area:pv}.hero-act{grid-area:act}
+.hero .eyebrow{margin-bottom:var(--sp4)}
+.hero h1{font-weight:650;font-size:var(--t-h1);line-height:1.04;letter-spacing:-.04em;margin:0;max-width:15ch;
+  color:var(--ink);text-wrap:balance}
+.hero .cta{justify-content:flex-start}
+.hero .diff{margin:var(--sp5) 0 0;max-width:40ch;font-weight:500;font-size:var(--t-l);line-height:1.5;color:var(--ink-2);
+  padding-left:var(--sp4);border-left:3px solid var(--accent)}
+.hero .cta-note{font-size:var(--t-xs);line-height:1.5}
+.site-bar .bar-act{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:var(--r-pill);
+  background:var(--cta);border-color:var(--cta);color:var(--on-cta);font-weight:600;font-size:var(--t-s);text-decoration:none}
+.skip{position:absolute;left:16px;top:-60px;z-index:5;background:var(--cta);color:var(--on-cta);padding:10px 16px;border-radius:8px;text-decoration:none}
+.skip:focus{top:12px}
+.hero .drop,.hero .local,.hero .job{max-width:560px}
+.how .try{margin-top:var(--sp5)}
+
+.hero>*{min-width:0}
+
+
+.pv{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;scroll-margin-top:84px;
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 50px 100px -50px rgba(30,27,75,.45)}
+.pv-bar{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--sp3);padding:0 var(--sp2) 0 var(--sp4);
+  background:var(--surface-2);border-bottom:1px solid var(--line)}
+.pv-bar .dots{display:inline-flex;gap:6px}
+.pv-bar .dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+body.site .pv-tag{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;padding:0 var(--sp2);text-decoration:none}
+.pv-tag span{font-size:var(--t-s);font-weight:600;color:var(--accent);background:var(--accent-wash);
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:var(--r-pill);padding:3px 12px;
+  transition:border-color .15s var(--ease)}
+.pv-tag span::after{content:" \2192"}
+.pv-tag:hover span{border-color:var(--accent)}
+.pv-body{display:flex;flex-direction:column;gap:var(--sp5);padding:var(--sp5)}
+ul.pv-qs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp3)}
+.pv-q{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--sp1) var(--sp4);
+  padding-bottom:var(--sp3);border-bottom:1px solid var(--line)}
+.pv-ql{margin:0;font-size:var(--t-s);color:var(--ink-2)}
+.pv-qv{display:inline-flex;align-items:flex-start;gap:var(--sp2);font-size:var(--t-l);font-weight:650;letter-spacing:-.01em;
+  color:var(--ink);text-align:left;word-break:keep-all;overflow-wrap:anywhere;line-height:1.35}
+.pv-qv .dot{width:10px;height:10px;border-radius:50%;flex:none;margin-top:.45em}
+.pv-train .pv-ql{margin-bottom:var(--sp2)}
+.pv-train{padding-top:var(--sp1)}
+.pv-h{margin:0 0 var(--sp5);font-size:var(--t-xl);line-height:1.25;font-weight:650;letter-spacing:-.015em;color:var(--ink);
+  text-wrap:balance}
+.pv-scale{list-style:none;margin:0;padding:22px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  position:relative}
+.pv-scale::before{content:"";position:absolute;left:0;right:0;top:6px;height:4px;border-radius:999px;
+  background:color-mix(in srgb,var(--ink-3) 35%,transparent)}
+.pv-scale li{position:relative;font-size:var(--t-s);line-height:1.3;color:var(--ink-3);text-align:center;padding:0 4px}
+.pv-scale li:first-child{text-align:left;padding-left:0}.pv-scale li:last-child{text-align:right;padding-right:0}
+.pv-scale li.on{color:var(--ink);font-weight:650}
+.pv-scale li.on::before{content:"";position:absolute;top:-22px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;
+  background:var(--cta);box-shadow:0 0 0 4px var(--surface)}
+.pv-scale li.on:first-child::before{left:0;margin-left:0}.pv-scale li.on:last-child::before{left:auto;right:0;margin-left:0}
+
+
+.prob{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:var(--sp6) clamp(32px,5vw,72px);align-items:center;
+  border-top:1px solid var(--line);padding-top:var(--sp7);margin-top:calc(var(--gap-band) * -.4)}
+.prob h2{max-width:none;word-break:keep-all;overflow-wrap:anywhere}
+.prob .sub{margin:var(--sp4) 0 0}
+ul.proof li .card-ico{margin-bottom:var(--sp4)}
+
+
+.ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.card-ico,.flow-ico{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;flex:none;
+  color:var(--accent);background:var(--accent-wash);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.card-ico{margin-bottom:var(--sp4)}
+
+
+.how h2{max-width:none}
+ol.flow{list-style:none;margin:var(--sp6) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4) 64px}
+ol.flow li{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp5)}
+ol.flow li:last-child{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));box-shadow:0 0 0 4px var(--accent-wash)}
+ol.flow .flow-ico{width:52px;height:52px;border-radius:14px}
+ol.flow .flow-ico .ico{width:26px;height:26px}
+ol.flow h3{font-size:var(--t-l);font-weight:650;letter-spacing:-.015em;margin:var(--sp4) 0 var(--sp2)}
+ol.flow p{margin:0;color:var(--ink-2);line-height:1.55}
+.flow-arrow{position:absolute;left:-56px;top:38px;width:48px;height:24px;fill:none;stroke:var(--ink-3);stroke-width:1.75;
+  stroke-linecap:round;stroke-linejoin:round}
+
+
+.pic{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pic-bar{display:flex;align-items:center;gap:var(--sp2);padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.pic-bar .dots{display:inline-flex;gap:5px}
+.pic-bar .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.pic-tag{margin-left:auto;font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.pic-body{height:150px;padding:var(--sp3) var(--sp4);display:flex;align-items:center;gap:var(--sp4)}
+.pic-svg{display:block;width:100%;height:auto;overflow:visible}
+.pic-svg text{font-family:var(--sans);fill:var(--ink)}
+pre.pic-log{margin:0;font-family:var(--mono);font-size:var(--t-xs);line-height:1.9;color:var(--ink-2);white-space:pre-wrap;
+  overflow-wrap:anywhere;min-width:0}
+pre.pic-log code{font:inherit}pre.pic-log .k{color:var(--accent)}pre.pic-log .v{color:var(--ink)}
+.pic-r .pic-body{gap:var(--sp4)}
+.pic-k{display:flex;flex-direction:column;gap:2px;flex:none}
+.pic-num{font-size:var(--t-xl);font-weight:650;letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
+.pic-lbl{font-size:var(--t-xs);color:var(--ink-2);max-width:9em;line-height:1.35}
+.pic-r .pic-svg{height:100%;width:auto;max-width:100%;flex:1 1 auto;min-width:0}
+.pic-r rect{fill:color-mix(in srgb,var(--ink-3) 32%,transparent)}
+.mk circle{stroke:none}.mk path{fill:none;stroke:var(--surface);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.mk.good circle{fill:var(--good)}.mk.crit circle{fill:var(--crit)}.mk.warn circle{fill:var(--warn)}
+.mk.warn circle{stroke:var(--ink-2);stroke-width:.8}.mk.warn .fill{fill:var(--surface);stroke:none}
+.mk.none circle{fill:none;stroke:var(--ink-3);stroke-width:1.1}.mk.none path{stroke:var(--ink-3)}
+.pic-c .pic-body{flex-direction:column;align-items:stretch;justify-content:center;gap:var(--sp1)}
+.pic-c .pic-svg{max-height:118px;min-height:0}
+.pic-c .bar{fill:color-mix(in srgb,var(--accent) 78%,transparent)}
+.pic-c .axis{stroke:var(--ink-3);stroke-width:1}
+.pic-c .val{font-size:var(--t-s);font-weight:650;text-anchor:middle}
+.pic-c .tick{font-size:var(--t-s);fill:var(--ink-2);text-anchor:middle}
+.pic-c .tick.unit{text-anchor:start}
+.pic-m .pic-body{flex-direction:column;align-items:stretch;justify-content:center;gap:var(--sp3)}
+.pic-m .meter{max-width:100%}
+.meter .cell{fill:none;stroke:color-mix(in srgb,var(--ink-3) 70%,transparent);stroke-width:1.2}
+.meter .cell.on{fill:color-mix(in srgb,var(--accent) 78%,transparent);stroke:var(--accent)}
+.pic-m .pic-cap{font-size:var(--t-s);color:var(--ink);font-weight:600;text-align:left}
+.pic-cap{margin:0;font-size:var(--t-xs);color:var(--ink-2);text-align:center}
+ol.flow h3{margin-top:var(--sp4)}
+.flow-arrow{top:100px}
+@media (max-width:480px){ol.flow li{padding:var(--sp4)}}
+
+.fork{margin:0;max-width:400px;width:100%;justify-self:center}
+.fork .fk-start{fill:var(--cta)}
+.fork .fk-start-t{fill:var(--on-cta);font-size:var(--t-s);font-weight:650}
+.fork .fk-line{fill:none;stroke:var(--ink-3);stroke-width:1.75;stroke-linecap:round}
+.fork .fk-node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.fork .fk-node text{font-size:var(--t-s);font-weight:650}
+.fork .coin circle{fill:none;stroke:var(--accent);stroke-width:1.5}
+
+.pflow{display:flex;align-items:flex-start;gap:var(--sp2);margin:var(--sp5) 0 0;padding:var(--sp5);width:fit-content;max-width:100%;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+.pf-step{display:flex;flex-direction:column;align-items:center;gap:var(--sp2);width:88px;text-align:center;font-size:var(--t-s);
+  font-weight:600;line-height:1.3;color:var(--ink)}
+.pf-ico{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;color:var(--accent);background:var(--accent-wash);
+  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.pf-kept{width:auto;min-width:88px;text-wrap:balance}
+.pf-kept .pf-ico{border-style:dashed;border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+.pf-arrow{width:22px;height:11px;flex:none;margin-top:19px;fill:none;stroke:var(--ink-3);stroke-width:1.75;stroke-linecap:round;
+  stroke-linejoin:round}
+.pf-sep{align-self:stretch;width:1px;flex:none;margin:0 var(--sp3);background:var(--line)}
+@media (max-width:480px){.pflow{padding:var(--sp4) var(--sp3);gap:2px}.pf-step{width:58px;font-size:var(--t-xs)}
+  .pf-ico{width:40px;height:40px;border-radius:12px}.pf-arrow{width:14px;margin-top:15px}.pf-sep{margin:0 var(--sp1)}}
+
+
+details.more{margin-top:var(--sp5);border-top:1px solid var(--line)}
+details.more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:var(--sp2);min-height:52px;
+  font-weight:600;color:var(--accent);width:fit-content;max-width:100%}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::after{content:"+";font-weight:400;font-size:var(--t-xl);line-height:1;transition:transform .2s var(--ease)}
+details.more[open]>summary::after{transform:rotate(45deg)}
+details.more>summary,details.kept>summary{text-decoration:underline 1px transparent;text-underline-offset:4px;
+  transition:text-decoration-color .15s var(--ease)}
+details.more>summary:hover,details.kept>summary:hover{text-decoration-color:currentColor}
+details.more>.sub:first-of-type{margin-top:var(--sp2)}
+
+
+.cta{display:flex;flex-wrap:wrap;gap:var(--sp3);align-items:center}
+
+.cta-note{margin:var(--sp4) 0 0;font-size:var(--t-s);color:var(--ink-3);max-width:56ch}
+body.site .btn:not(.big){font-size:var(--t-s)}
+.btn.big{font-size:var(--t-m);font-weight:600;padding:0 22px;min-height:48px;border-radius:var(--r-pill);text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;transition:transform .15s var(--ease),background .15s var(--ease),border-color .15s var(--ease)}
+.btn.big.primary{background:var(--cta);border-color:var(--cta);color:var(--on-cta)}
+.btn.big.primary::after{content:"\2192";transition:transform .15s var(--ease)}
+.btn.big.primary:hover::after{transform:translateX(3px)}
+.btn.big.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.big.ghost:hover{border-color:var(--ink-3);background:var(--surface)}
+.btn.big:active{transform:translateY(1px)}
+.btn.danger{color:var(--crit)}
+
+
+.drop{border:1.5px dashed color-mix(in srgb,var(--ink-3) 45%,var(--line));border-radius:var(--r-card);background:var(--surface);
+  padding:var(--sp6) var(--sp5);display:flex;flex-direction:column;align-items:center;gap:var(--sp2);text-align:center;cursor:pointer;
+  transition:border-color .15s var(--ease),background .15s var(--ease)}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-wash)}
+.drop-h{font-size:var(--t-l);font-weight:650}
+.drop-types{font-size:var(--t-s);color:var(--ink-3);margin-top:var(--sp1)}
+.drop label.btn{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;padding:0 18px;border-radius:var(--r-pill);
+  background:var(--cta);border-color:var(--cta);color:var(--on-cta);font-weight:600}
+
+.try{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2);margin-top:var(--sp5);font-size:var(--t-s);color:var(--ink-2)}
+.try .btn.ex{min-height:44px;border-radius:var(--r-pill);padding:0 14px}
+.local{display:flex;align-items:center;gap:var(--sp2);font-size:var(--t-s);color:var(--ink-2);margin:var(--sp3) 0 0}
+.local .dot{width:8px;height:8px;border-radius:50%;flex:none}
+ul.priv .ico{color:var(--accent);margin-top:1px}
+details.kept{margin-top:var(--sp2)}
+details.kept>summary{cursor:pointer;display:inline-flex;align-items:center;min-height:44px;font-weight:600;color:var(--accent)}
+details.kept>p{margin:0;font-size:var(--t-s);line-height:1.6}
+.job{margin-top:var(--sp4)}
+.job h3{font-size:var(--t-m);font-weight:650;margin:0}
+.job p{margin:var(--sp1) 0 0;color:var(--ink-2);font-size:var(--t-s)}
+.job .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;vertical-align:-2px;margin-right:var(--sp2)}
+.job.err{border-color:var(--crit)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+
+.src .promise,.next .promise,.rec .promise{margin:var(--sp5) 0 0;font-weight:600;color:var(--ink);max-width:62ch;
+  padding-left:var(--sp4);border-left:3px solid var(--accent)}
+
+
+ul.get,ul.ways{list-style:none;padding:0;margin:var(--sp6) 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4)}
+ul.get li,ul.ways li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp6) var(--sp5);
+  transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+ul.get li:hover,ul.ways li:hover{border-color:color-mix(in srgb,var(--ink-3) 40%,var(--line));box-shadow:0 20px 40px -30px rgba(30,27,75,.35)}
+ul.get li.lead{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));box-shadow:0 0 0 4px var(--accent-wash)}
+ul.get h3,ul.ways h3{font-size:var(--t-l);font-weight:650;letter-spacing:-.015em;margin:0 0 var(--sp3)}
+ul.get p,ul.ways p{margin:0;color:var(--ink-2);line-height:1.6}
+ul.ways .way-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--sp2);margin-bottom:var(--sp4)}
+ul.ways .way-top .card-ico{margin:0}
+.soon{font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+  border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:var(--r-pill);padding:3px 9px;white-space:nowrap}
+.next .note{margin:var(--sp3) 0 0;font-size:var(--t-s);color:var(--ink-3)}
+
+
+ul.chips{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--sp2)}
+ul.chips li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 14px;font-size:var(--t-s);color:var(--ink-2)}
+ul.papers li{font-family:var(--mono);font-size:var(--t-xs)}
+
+
+ul.ten{list-style:none;padding:var(--sp2) var(--sp6);margin:var(--sp6) 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 var(--sp7);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+ul.ten li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:var(--sp2);padding:14px 0;border-bottom:1px solid var(--line);font-size:var(--t-m)}
+ul.ten .k{font-family:var(--mono);color:var(--accent);font-size:var(--t-xs);padding-top:2px}
+ul.much{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:var(--sp3);color:var(--ink-2);max-width:70ch}
+
+
+ul.priv{list-style:none;padding:0;margin:var(--sp5) 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--sp4)}
+ul.priv li{display:flex;align-items:flex-start;gap:var(--sp3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:var(--sp5);color:var(--ink-2);line-height:1.55}
+
+
+.faq{margin-top:var(--sp5);border-top:1px solid var(--line);max-width:860px}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;font-weight:600;font-size:var(--t-l);list-style:none;display:flex;justify-content:space-between;align-items:center;
+  gap:var(--sp4);min-height:64px;padding:var(--sp3) 0}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--ink-3);font-weight:400;font-size:var(--t-xl);transition:transform .2s var(--ease)}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{margin:0 0 var(--sp5);color:var(--ink-2);max-width:70ch;line-height:1.65}
+
+
+.end{text-align:center;border-radius:28px;padding:clamp(48px,8vw,96px) var(--sp5);position:relative;isolation:isolate;overflow:hidden;
+  background:var(--cta);color:var(--on-cta);border:0}
+.end::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(50% 80% at 50% 0%,rgba(99,102,241,.45),transparent 70%),radial-gradient(40% 60% at 90% 100%,rgba(14,165,233,.25),transparent 70%)}
+.end h2{margin:0 auto var(--sp6);color:inherit;max-width:20ch}
+.end .cta{justify-content:center}
+.end .btn.big.primary{background:var(--on-cta);border-color:var(--on-cta);color:var(--cta)}
+.end .btn.big.ghost{color:var(--on-cta);border-color:color-mix(in srgb,var(--on-cta) 35%,transparent)}
+.end .cta-note{color:color-mix(in srgb,var(--on-cta) 78%,transparent)}
+.end .cta-note{margin-inline:auto}
+.end :focus-visible{outline-color:var(--on-cta)}
+
+
+.site-foot{border-top:1px solid var(--line);padding-block:var(--sp6);padding-inline:16px;text-align:center;font-size:var(--t-s);color:var(--ink-3)}
+
+
+.site-bar .acct{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp4);font-size:var(--t-s)}
+.site-bar .acct a{color:var(--ink-2);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.site-bar .acct a:hover{color:var(--ink)}
+.site-bar .acct .who{color:var(--ink-3)}
+.site-bar .acct form{display:inline;margin:0}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);cursor:pointer;text-decoration:underline;min-height:44px}
+ul.mine{list-style:none;margin:var(--sp5) 0;padding:0;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
+ul.mine li{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp4);padding:var(--sp4) var(--sp5);border-top:1px solid var(--line)}
+ul.mine li:first-child{border-top:0}
+ul.mine .name{flex:1 1 220px;min-width:0;overflow-wrap:anywhere;color:var(--ink)}
+ul.mine .when{color:var(--ink-3);font-size:var(--t-s)}
+ul.mine form{margin:0}
+ul.mine .btn{min-height:40px;border-radius:var(--r-pill);padding:0 14px;display:inline-flex;align-items:center}
+
+ul.mine .tag.ex{flex:0 0 auto;font-size:var(--t-xs);font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:var(--r1);padding:2px 8px}
+.card.msg{max-width:640px;margin:var(--gap-band) auto 0;border-radius:var(--r-card)}
+.card.msg pre{white-space:pre-wrap;font-size:var(--t-xs);color:var(--ink-2)}
+.card.msg .btn.primary,.band > p > .btn.primary{background:var(--cta);border-color:var(--cta);color:var(--on-cta);border-radius:var(--r-pill);
+  min-height:44px;display:inline-flex;align-items:center;padding:0 18px;font-weight:600}
+
+
+@media (max-width:980px){
+  .hero{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "pv" "act";grid-template-rows:auto;row-gap:var(--sp5);
+    padding-top:var(--sp5)}
+  ul.get,ul.ways,ul.ten{grid-template-columns:1fr}
+  ul.ten{padding:var(--sp2) var(--sp5)}
+  .pv{max-width:620px}
+  ol.flow{grid-template-columns:1fr;gap:48px}
+  .flow-arrow{left:30px;top:-38px;transform:rotate(90deg)}}
+@media (max-width:980px){.prob{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){.pv-body{padding:var(--sp4);gap:var(--sp4)}
+  .pv-h{font-size:var(--t-l);margin-bottom:var(--sp4)}}
+@media (max-width:1040px){.site-bar nav{display:none}.site-bar .lang{margin-left:auto}}
+.site-bar{flex-wrap:nowrap}.site-bar .brand,.site-bar .lang,.site-bar .bar-act{flex:none;white-space:nowrap}
+@media (max-width:480px){.site-bar{gap:var(--sp2)}}
+@media (max-width:400px){.site-bar .bar-act{display:none}}
+
+@media (max-width:640px){.site-bar{flex-wrap:wrap}
+  .site-bar .acct{order:1;flex:1 0 100%;gap:0 var(--sp4)}
+  .site-bar .acct .who{min-width:0;overflow-wrap:anywhere}}
+@media (max-width:480px){.btn.big{width:100%;justify-content:center}.hero h1{letter-spacing:-.035em}}
+
+@media (max-width:480px){.hero{row-gap:var(--sp4);padding-top:var(--sp4)}.hero .eyebrow{margin-bottom:var(--sp3)}
+  .hero .diff{font-size:var(--t-m);line-height:1.45;margin-top:var(--sp4)}
+  .pv-body{gap:var(--sp3)}.pv-q{padding-bottom:var(--sp2)}ul.pv-qs{gap:var(--sp2)}
+  .pv-h{margin-bottom:var(--sp3)}}
+@media (prefers-reduced-motion: reduce){
+  body.site *,body.site *::before,body.site *::after{transition:none !important;animation:none !important}}
+.site-bar .home{color:var(--ink-2);text-decoration:none;font-size:var(--t-s);min-height:44px;display:inline-flex;align-items:center;flex:none;white-space:nowrap}.site-bar .home:hover{color:var(--ink)}.site-bar .home-sep{color:var(--ink-3);margin:0 -4px;flex:none}.site-foot a{color:var(--ink-2)}@media (max-width:400px){.site-bar .home,.site-bar .home-sep{display:none}}</style>
+</head><body class="site">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="site-bar"><a class="home" href="../">Shuhui Qu</a><span class="home-sep" aria-hidden="true">/</span><a class="brand" href="./"><svg class="mark" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#6366f1"/><path d="M13 44h26M13 53h15" fill="none" stroke="#e0e7ff" stroke-width="5" stroke-linecap="round"/><path d="M11 25h11l7 8 20-21" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Trace Check-up</a><nav aria-label="Sections of this page"><a href="#private">Privacy</a><a href="#faq">Questions</a></nav><a class="lang" href="index.zh.html" hreflang="zh-CN">中文</a></header>
+<main class="site-main" id="main"><section class="hero" id="top"><div class="hero-head"><p class="eyebrow">A neutral check-up for AI-agent logs</p><h1>Check your agent&#x27;s logs before you pay to train it.</h1><p class="diff">Know now which fields to record and how much to collect, so you don&#x27;t collect for months and then find one missing. Compare training with your agent trying again, counted in tries (in money: coming soon).</p></div><figure class="pv" id="fc"><figcaption class="pv-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><a class="pv-tag" href="example-report.html"><span>Example: a made-up log</span></a></figcaption><div class="pv-body"><ul class="pv-qs"><li class="pv-q" data-q="q1" data-status="pass"><span class="pv-ql">What to record</span><span class="pv-qv"><span class="dot good" aria-hidden="true"></span>10 of 11 things recorded</span></li><li class="pv-q" data-q="q2" data-status="fail"><span class="pv-ql">Enough to train?</span><span class="pv-qv"><span class="dot crit" aria-hidden="true"></span>11 conversations worked; can&#x27;t tell below 5,000</span></li></ul><div class="pv-train" data-card="train" data-conf="low"><p class="pv-ql">Train, or try again?</p><p class="pv-h">Can&#x27;t tell yet: training could make it better or worse.</p><ol class="pv-scale" aria-label="What the training card can say"><li>Could help</li><li class="on" aria-current="true">Can&#x27;t tell yet</li><li>Trying again is enough</li></ol></div></div></figure><div class="hero-act"><div class="cta"><a class="btn big primary" href="example-report.html">See an example report</a></div><p class="cta-note">It is open source: the code is published when the first team asks for it. Want to discuss? Email shuhuiq＠stanford.edu</p></div></section><section class="band prob" id="problem"><div><p class="eyebrow">The problem</p><h2>Training costs money. Trying again costs money too.</h2><p class="sub">Pick on a hunch and you may pay for the wrong one.</p></div><figure class="fork"><svg class="pic-svg" viewBox="0 0 300 120" role="img" aria-label="Check your log first, then choose: train, or try again. Both cost money."><g aria-hidden="true"><rect class="fk-start" x="2" y="40" width="136" height="40" rx="12"/><text class="fk-start-t" x="70" y="64.5" text-anchor="middle">Check your log</text><path class="fk-line" d="M138 60h10c13 0 13-36 26-36M148 60c13 0 13 36 26 36"/><g class="fk-node a" transform="translate(176 24)"><rect x="0" y="-17" width="122" height="34" rx="17"/><g transform="translate(20 0)"><g class="coin" aria-hidden="true"><circle r="7"/><circle r="3.5"/></g></g><text x="36" y="5">Train</text></g><g class="fk-node b" transform="translate(176 96)"><rect x="0" y="-17" width="122" height="34" rx="17"/><g transform="translate(20 0)"><g class="coin" aria-hidden="true"><circle r="7"/><circle r="3.5"/></g></g><text x="36" y="5">Try again</text></g></g></svg></figure></section><section class="band how" id="how"><h2 id="how-h">From log to next step</h2><ol class="flow" aria-labelledby="how-h"><li><figure class="pic pic-l"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><pre class="pic-log" role="img" aria-label="Three lines of the made-up example log: the task, the model, and whether it worked and who decided."><code><span class="k">&quot;task_id&quot;:</span> <span class="v">&quot;refund_order&quot;</span>
+<span class="k">&quot;model&quot;:</span> <span class="v">&quot;deepseek-chat&quot;</span>
+<span class="k">&quot;outcome&quot;:</span> <span class="v">{&quot;success&quot;: true, &quot;by&quot;: &quot;check&quot;}</span></code></pre></div></figure><h3>Send your log</h3></li><li><svg class="flow-arrow" viewBox="0 0 48 24" aria-hidden="true" focusable="false"><path d="M2 12h42m-7-7 7 7-7 7"/></svg><figure class="pic pic-r"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><div class="pic-k" aria-hidden="true"><span class="pic-num num">10/11</span><span class="pic-lbl">What to record</span></div><svg class="pic-svg" viewBox="0 0 140 122" role="img" aria-label="10 of 11 things recorded"><g aria-hidden="true"><g transform="translate(0 6)" data-item="conversation" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="58" height="3.2" rx="1.6"/></g><g transform="translate(0 17)" data-item="call" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="95" height="3.2" rx="1.6"/></g><g transform="translate(0 28)" data-item="result" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="68" height="3.2" rx="1.6"/></g><g transform="translate(0 39)" data-item="task" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="105" height="3.2" rx="1.6"/></g><g transform="translate(0 50)" data-item="outcome" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="78" height="3.2" rx="1.6"/></g><g transform="translate(0 61)" data-item="user" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="115" height="3.2" rx="1.6"/></g><g transform="translate(0 72)" data-item="repeats" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="88" height="3.2" rx="1.6"/></g><g transform="translate(0 83)" data-item="tools" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="61" height="3.2" rx="1.6"/></g><g transform="translate(0 94)" data-item="model" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="98" height="3.2" rx="1.6"/></g><g transform="translate(0 105)" data-item="tokens" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="71" height="3.2" rx="1.6"/></g><g transform="translate(0 116)" data-item="state" data-status="optional"><g class="mk none" transform="translate(5 0)"><circle r="4.6"/><path d="M-2 0h4"/></g><rect x="15" y="-1.6" width="108" height="3.2" rx="1.6"/></g></g></svg></div></figure><h3>Checked in about a minute</h3></li><li><svg class="flow-arrow" viewBox="0 0 48 24" aria-hidden="true" focusable="false"><path d="M2 12h42m-7-7 7 7-7 7"/></svg><figure class="pic pic-m"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><svg class="pic-svg meter" viewBox="-1 -1 214 16" role="img" aria-label="2 of 12 tasks needed: can&#x27;t tell yet" data-have="2" data-need="12"><g aria-hidden="true"><rect class="cell on" x="0" y="0" width="14" height="14" rx="3"/><rect class="cell on" x="18" y="0" width="14" height="14" rx="3"/><rect class="cell" x="36" y="0" width="14" height="14" rx="3"/><rect class="cell" x="54" y="0" width="14" height="14" rx="3"/><rect class="cell" x="72" y="0" width="14" height="14" rx="3"/><rect class="cell" x="90" y="0" width="14" height="14" rx="3"/><rect class="cell" x="108" y="0" width="14" height="14" rx="3"/><rect class="cell" x="126" y="0" width="14" height="14" rx="3"/><rect class="cell" x="144" y="0" width="14" height="14" rx="3"/><rect class="cell" x="162" y="0" width="14" height="14" rx="3"/><rect class="cell" x="180" y="0" width="14" height="14" rx="3"/><rect class="cell" x="198" y="0" width="14" height="14" rx="3"/></g></svg><p class="pic-cap" aria-hidden="true">2 of 12 tasks needed: can&#x27;t tell yet</p></div></figure><h3>Train, or try again</h3></li></ol><h3 class="fmt-h">Formats it reads</h3><ul class="chips"><li>OpenAI chat</li><li>OpenTelemetry GenAI</li><li>Arize Phoenix</li><li>LangSmith</li><li>Langfuse</li><li>Claude Code</li><li>ShareGPT</li><li>Microsoft ToolTalk</li><li>CSV / Excel</li><li>JSON lines</li></ul></section><section class="band next" id="next"><p class="eyebrow">After the report</p><h2>Three ways forward. The advice is the same, including “don&#x27;t train”.</h2><ul class="ways"><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg></span></div><h3>Train it yourself</h3><p>On any platform you like. The report shows which conversations worked and which had problems. Coming soon: a list of the ones to train on.</p></li><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 17V9m0 0-3 3m3-3 3 3"/><path d="M7.5 18a4.5 4.5 0 0 1-.4-8.98A5.5 5.5 0 0 1 17.6 9.5 4 4 0 0 1 17 18"/></svg></span><span class="soon">Coming soon</span></div><h3>Train on our platform</h3><p>We send the conversations the report picked to the training platform you choose, on your own account. We don&#x27;t sell computing power.</p></li><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="7" height="12" rx="1.5"/><rect x="14" y="9" width="7" height="9" rx="1.5"/><path d="M3 21h18"/></svg></span><span class="soon">Coming soon</span></div><h3>Compare on our platform</h3><p>Trained it anywhere? Send the new log back. We compare it with your untrained agent trying again at the same cost, on the same tasks. Too few tasks, and we say we can&#x27;t tell.</p></li></ul><details class="more"><summary>Where to train, and what your log is enough for</summary><p class="sub">A log of conversations and tool calls is enough to train by copying the examples that worked. Training by trial and reward also needs a way to score each try: every platform that offers it asks for one.</p><h3 class="fmt-h">Platforms that train open models through an API, checked in October 2026</h3><ul class="chips"><li>Thinking Machines Tinker</li><li>Fireworks Training API</li><li>Together AI</li><li>CoreWeave Serverless RL</li><li>Prime Intellect Lab</li><li>AWS Bedrock</li><li>Google Vertex AI</li></ul><p class="note">This changes fast: OpenAI takes no new fine-tuning jobs from 6 January 2027.</p></details></section><section class="band rec" id="record"><h2>Neutral by design</h2><ul class="get proof"><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7 2.5 13a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg></span><h3>No training platform pays us, so the advice doesn&#x27;t depend on which way you go.</h3></li><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><h3>Every sentence points to its source</h3></li><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11l2 2 4-4"/></svg></span><h3>We don&#x27;t promise that training will help.</h3></li></ul><details class="more"><summary>How to collect your log so it can answer</summary><p class="sub">The eleven things a useful log records. The report marks each one recorded, partly recorded or missing.</p><p class="promise">Most often missing: what came back from each action, a task name, and whether it worked.</p><ul class="ten"><li><span class="k num">1</span><span>A number or name for each conversation, and the order of its steps</span></li><li><span class="k num">2</span><span>Every action: which tool, and what was sent to it</span></li><li><span class="k num">3</span><span>What came back from each action, exactly as it was, errors and empty answers too</span></li><li><span class="k num">4</span><span>A task name: the same name every time the same kind of job is done</span></li><li><span class="k num">5</span><span>Whether each conversation worked: yes or no, or a score from 0 to 1, and who decided it (an automatic check as it ran, or a person afterwards)</span></li><li><span class="k num">6</span><span>Everything the person said to the agent, the first message and any later ones</span></li><li><span class="k num">7</span><span>The same task tried at least 8 times, each marked worked or failed</span></li><li><span class="k num">8</span><span>The instructions (system prompt) and the list of tools the agent had in each conversation, as they were then, with what each tool needs</span></li><li><span class="k num">9</span><span>Which AI model (and version) ran the conversation</span></li><li><span class="k num">10</span><span>How many tokens each conversation used, input and output</span></li><li><span class="k num">11</span><span>Optional: a copy of the records the agent will work on, taken before it starts</span></li></ul><h3 class="fmt-h">How much</h3><ul class="much"><li>Each task tried 8 times, each marked worked or failed: then you can see how much trying again already fixes.</li><li>About 5,000 conversations that worked, each saying who decided it worked, before training. Below this, published results go both ways: training made some models better and some worse (MUA-RL, arXiv 2508.18669; ToolRL, arXiv 2504.13958). We can&#x27;t tell which way yours would go.</li><li>Many different tasks tell you more than many copies of a few.</li></ul></details><details class="more" id="src"><summary>See the sources</summary><p class="sub">Each sentence rests on a reading from your own log or on a published result, named with its paper. When there isn&#x27;t enough to go on, the report says it can&#x27;t tell.</p><h3 class="fmt-h">Published results the forecast cites</h3><ul class="chips papers"><li>Yue et al. · arXiv 2504.13837</li><li>Tool-N1 · arXiv 2505.00024</li><li>ToolRL · arXiv 2504.13958</li><li>MUA-RL · arXiv 2508.18669</li><li>LOOP · arXiv 2502.01600</li><li>Simia · arXiv 2511.01824</li><li>APIGen-MT · arXiv 2504.03601</li><li>ToolRM · arXiv 2509.11963</li><li>Qwen3 · arXiv 2505.09388</li><li>Yang and Chen · arXiv 2609.22547</li></ul></details></section><section id="private" class="band"><h2>Private by design</h2><ul class="priv"><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg><span>It runs on your computer. Nothing is uploaded to us or to anyone else.</span></li><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 6.1A9 9 0 0 1 12 6c5 0 9 6 9 6a16 16 0 0 1-2.6 3.2M6.6 7.6C4.4 9.1 3 12 3 12s4 6 9 6a8.5 8.5 0 0 0 3.4-.7M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg><span>As soon as the log is read, these are hidden: emails, most card numbers, common kinds of keys, and the first word after “password:”. Phone numbers are hidden only when written in common ways, such as +44 20 7946 0958, (415) 555-0132 or 13812345678 — not every one, so hide the others yourself. Names and addresses are not hidden.</span></li><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span>It reads only the file you give it, and never changes it.</span></li></ul></section><section id="faq" class="band"><h2>Questions</h2><div class="faq"><details><summary>Will you train a model for us?</summary><p>If you want: on the training platform you choose, with your own account (coming soon). We will still tell you when not to.</p></details><details><summary>Do training platforms pay you?</summary><p>No. We sell neither training nor computing power, and no platform pays us. That is why the report can tell you not to train.</p></details><details><summary>How sure is the forecast?</summary><p>It gives a direction and a range, never a single number. Each card says how sure it is, what it rests on and what would change it. With too little to go on, it says it can&#x27;t tell.</p></details><details><summary>What does “at the same cost” mean?</summary><p>Letting the agent try a task again until it works takes more tries. The report counts on your log how many tries that takes on average, and weighs training against it: one try against that many. If your log records tokens, it also says how many tokens one try uses. Comparing in money on this site: coming soon.</p></details><details><summary>When is trying again not an option?</summary><p>When the agent can&#x27;t tell, as it runs, that a try failed, or when its actions change records and aren&#x27;t safe to do twice, such as a refund paid twice. The report asks you about both.</p></details><details><summary>What does my log need to have?</summary><p>Each conversation, every action the agent took and what came back, and ideally whether the task worked and who decided that. The report lists what is missing.</p></details><details><summary>Who can see my log?</summary><p>No one. It is read on this computer and not sent anywhere.</p></details></div></section><section class="band end"><h2>Check your agent&#x27;s logs before you pay to train it.</h2><div class="cta"><a class="btn big primary" href="example-report.html">See an example report</a></div></section></main>
+<footer class="site-foot">Trace Check-up, made with trace2wm. · <a href="../">Shuhui Qu</a> · <a href="../projects/#telemetry">Projects</a> · <a href="../blog/train-or-try-again.html">Write-up: Train, or let it try again?</a> · Want to discuss? Email shuhuiq＠stanford.edu</footer>
+
+</body></html>
