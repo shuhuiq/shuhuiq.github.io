@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Train, or let it try again? What your agent's own logs can already tell you · Shuhui Qu</title>
+<meta name="description" content="Three questions a team can answer from its AI agent's log before paying to train: what to record, how much is enough, and training compared with trying again, counted in tries. With a small tool that runs on your own computer.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-scale"/></svg></span>
+<h1>Train, or let it try again? What your agent's own logs can already tell you</h1>
+<div class="meta">October 2026</div>
+
+<p>A team runs an AI agent that uses tools: it looks up orders, sends emails, updates records. On some tasks it
+fails. There are two common ways to make it do better. You can train a smaller model on the agent's own
+conversations, or you can let the agent try the task again. Both cost money. Training costs once, up front, and can
+go either way. Trying again costs every time, and it works only if the agent can tell that a try failed. Most teams
+choose on a hunch.</p>
+
+<p>I built a small tool, <a href="../trace-checkup/">Trace Check-up</a>, that answers from the log the agent already
+writes, on your own computer, before anything is trained. An earlier post,
+<a href="before-you-train-on-agent-logs.html">Before you train on your agent's logs</a>, lists the mistakes it was
+built to catch. This one is about the three questions it answers, and what it says when it can't answer them.</p>
+
+<h3>1. What to record</h3>
+
+<p>A log can only answer what it records. The check-up looks for eleven things and marks each one recorded, partly
+recorded or missing. Among them: every action and what came back, exactly as it was, errors and empty answers too;
+a task name that is the same every time the same kind of job is done; whether each conversation worked, and who
+decided that; and the tokens each one used. The <a href="../trace-checkup/example-report.html#p-record">example
+report</a> shows the whole list.</p>
+
+<p>Two of these matter more than they look. Without a task name, tries at the same job can't be grouped, so nothing
+can be said about trying again. Without &ldquo;worked or failed&rdquo;, nothing can be said about training. And
+&ldquo;who decided&rdquo; matters too: the agent's own word that it is done is not a check.</p>
+
+<h3>2. How much is enough</h3>
+
+<p>Two counts. The first is <b>each task tried at least 8 times, each marked worked or failed</b>. That shows how
+much trying again already fixes, and trying again needs no training, so training has to do better than that to be
+worth it.</p>
+
+<p>The second is <b>conversations that worked, and say who decided they worked</b>: an automatic check, a person, or
+a system other than the agent, such as your order database. The report draws its line at about 5,000. Below that,
+published results go both ways. In one study, the same cold-start fine-tuning on about 2,000 trajectories took
+Qwen3-8B from 41.0 to 31.4 on a retail tool benchmark, and Qwen3-14B from 43.1 to 53.7
+(<a href="https://arxiv.org/abs/2508.18669">MUA-RL, Table 1</a>). The 5,000 line is a rough guide, not a measured
+minimum: no study I know of has measured it for small models on customer-service or CRM-style tool tasks. And many
+different tasks tell you more than many copies of a few.</p>
+
+<h3>3. Train, or try again, counted in tries</h3>
+
+<p>The report puts two cards side by side. <i>If the agent tries again</i>: the share of tasks that worked on the
+first try and within 2, 4 and 8 tries, measured on your log. <i>If you train a small model now</i>: a rough range
+from published studies, marked low confidence, with each study listed.</p>
+
+<p>They are weighed at the same cost. If the agent needs on average a few tries to get a task right, one try of a
+trained model is weighed against that many tries of the untrained one. If the log records tokens, the report also
+says how many tokens one try uses. Today the comparison is counted in tries.</p>
+
+<h3>What it reads, and what it refuses to guess</h3>
+
+<p>It reads only the file you name, never changes it, and makes no network or API call. Each sentence on the page is
+a phrase with numbers from your log filled in, chosen by written rules. &ldquo;Where this comes
+from&rdquo; under each check and card names the reading of your log or the paper it rests on, and the limit it
+used. Every limit is listed on
+the page and can be changed.</p>
+
+<p>When the log can't decide, it says &ldquo;can't tell yet&rdquo; and what would change that. It does not draw a
+guess. Two conditions for trying again are often not in a log: whether your system can tell, as the agent runs,
+that a try failed, and whether the agent's actions are safe to do twice (a refund paid twice is not). The report
+shows what your log suggests about each, and asks you to confirm what it can't see.</p>
+
+<h3>What it says on a made-up log</h3>
+
+<p>The tool comes with a made-up support log: 16 conversations about 2 tasks, refunding an order and changing an
+address, each tried 8 times, 32 actions in all. Here is the
+<a href="../trace-checkup/example-report.html">full report on it</a>. Its numbers show how the report reads; they say
+nothing about any real agent.</p>
+
+<ul>
+  <li><b>What to record:</b> 10 of the 11 things are recorded. The optional copy of the records is not.</li>
+  <li><b>The first thing to fix:</b> &ldquo;Check the made-up IDs before training the AI.&rdquo; In 4 of the 16 places
+  where the agent used an ID, nobody had given it and it had not looked it up. Training on those conversations would
+  teach a model to make IDs up.</li>
+  <li><b>Trying again:</b> the curve looks good. 69 % of tasks worked on the first try, 93 % within 2 tries, and
+  100 % within 4 or 8.</li>
+  <li><b>And yet both cards say &ldquo;can't tell yet&rdquo;.</b> The curve stands on 2 tasks, and the report wants at
+  least 12 before it says what trying again would do. The training card has 11 conversations that worked; even with
+  about 2,000, published studies saw training go either way. The next step it gives is concrete: 10 more tasks,
+  each tried 8 times, and about 4,989 more conversations that worked.</li>
+  <li><b>A question back:</b> at least 34 % of the actions that worked change records, most often refunds. So before
+  it counts on trying again, it asks whether those actions are safe to repeat.</li>
+</ul>
+
+<p>That is the point of the example. A curve that reaches 100 % on two tasks is not evidence, and both cards say
+so: can't tell yet.</p>
+
+<h3>Why a small tool on your own computer</h3>
+
+<p>Agent logs hold customers' names, orders and messages. The simplest way to keep them private is not to send them
+anywhere, so the tool runs on your computer, offline, on the CPU. On the made-up log the whole report took under a
+second on a laptop.</p>
+
+<p>The answer also must not depend on who sells training. No training platform pays me, the advice includes
+&ldquo;don't train&rdquo;, and there is no service behind the tool to sell. It does not promise that training will
+help.</p>
+
+<h3>Can I run it?</h3>
+
+<p>Not yet: the code is not public. The <a href="../trace-checkup/example-report.html">example report</a> is the
+page the tool writes, and the <a href="../trace-checkup/">product page</a> lists the log formats it reads.</p>
+
+<h3>What it does not do yet</h3>
+<ul>
+  <li>Compare a trained agent with the untrained one from two logs, at the same cost and on the same tasks. It is
+  designed and not built.</li>
+  <li>Pick the conversations to train on. Today it shows which worked and which had problems.</li>
+  <li>Count who decided a success in a table export. It says so on the page.</li>
+  <li>Train anything, or give a single-number forecast. It gives directions and ranges, and &ldquo;can't tell
+  yet&rdquo;.</li>
+</ul>
+
+<p class="caveat">Limits: the checks were built on one project's own logs and mistakes; another team's logs will
+break assumptions mine did not. The training card rests on published studies that go both ways, and is labelled low
+confidence for that reason.</p>
+
+</div>
+</body>
+</html>

@@ -78,24 +78,28 @@
 
   <section class="prod" id="telemetry">
     <div class="prod-top"><span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
-      <div><div class="prod-label">trace2wm telemetry &middot; for teams running AI agents</div>
+      <div><div class="prod-label">Trace Check-up (trace2wm telemetry) &middot; for teams running AI agents</div>
       <h2 class="prod-h">Before you train your agent, find out if it's worth it.</h2></div>
     </div>
-    <p class="prod-sub">Drop in your agent's logs. A minute later you know whether training a smaller model would
-    beat simply letting the agent try again at the same cost, whether you have enough of the right data, and what to
-    record next.</p>
+    <p class="prod-sub">It reads your agent's log on your own computer. In about a minute it says what the log is
+    missing, whether there is enough of it, and how training compares with letting the agent try again, counted in
+    tries &mdash; or that it can't tell yet, and what to collect.</p>
     <ul class="prod-list">
-      <li><b>Train, or try again?</b> Two cards side by side: what retrying already gets you, measured on your own
-      log, and what training could get you, with the published results it is based on.</li>
-      <li><b>Do you have enough?</b> Which tasks have no example of success, which states are never reached, which
-      tools are never used &mdash; as a collection plan with sizes.</li>
-      <li><b>What to record.</b> The ten things a log needs before it can answer, and the ones yours is missing.</li>
+      <li><b>Train, or try again?</b> Two cards side by side: what trying again does, measured on your own log, and a
+      rough range for training a small model, with the published results it is based on. Either card can say
+      &ldquo;can't tell yet&rdquo;.</li>
+      <li><b>Do you have enough?</b> Tasks tried at least 8 times, conversations that worked and who decided they
+      worked, tasks that never worked &mdash; and how many more to collect.</li>
+      <li><b>What to record.</b> The eleven things a log needs before it can answer, and the ones yours is missing.</li>
       <li><b>Honest by construction.</b> Every sentence points to a reading of your log or a cited paper, and it
       says &ldquo;can't tell&rdquo; when the log cannot decide. It never promises that training will help, and no
       training platform pays us, so the advice does not depend on which way you go.</li>
     </ul>
-    <p class="prod-foot"><b>Status:</b> runs on your own computer, or on a hosted site for invited teams where your
-    log is deleted as soon as the report is made. Comparing a trained agent with the untrained one at the same cost is next. Write-up:
+    <p class="prod-foot"><b>Status:</b> a small tool that runs on your own computer, so your log never leaves it. The
+    code is not public yet; the <a href="../trace-checkup/example-report.html">example report</a> (on a made-up log)
+    shows what it makes. Comparing a trained agent with the untrained one at the same cost is not built yet.
+    <a href="../trace-checkup/">Product page</a>. Write-ups:
+    <a href="../blog/train-or-try-again.html">Train, or let it try again?</a> &middot;
     <a href="../blog/before-you-train-on-agent-logs.html">Before you train on your agent's logs</a> &middot; related
     work: <a href="../blog/review-agent-logs-training.html">from agent logs to training</a>.</p>
   </section>

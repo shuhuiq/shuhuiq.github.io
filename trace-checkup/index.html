@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace Check-up · Shuhui Qu</title>
+<meta name="description" content="A small tool that runs on your own computer; the code is not public yet. It reads your AI agent's log and says what to record, whether you have enough, and how training compares with letting the agent try again, counted in tries.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="../blog/">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico c-tele lg" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
+<div class="prod-label">Trace Check-up &middot; a neutral check-up for AI-agent logs</div>
+<h1>Check your agent's logs before you pay to train it.</h1>
+<p class="note">A small tool that runs on your own computer. Give it the log your agent already writes. In about a
+minute: what trying again fixes, what training might add, and what the log is missing.</p>
+<p><a href="example-report.html">See an example report</a> (on a made-up log; also in <a href="example-report.zh.html" lang="zh">中文</a>). The code is not public yet.</p>
+
+<h3>From log to next step</h3>
+<div class="cards">
+  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-log"/></svg></span>
+    <div class="card-title">1. Give it your log</div>
+    <p>The file your agent already writes. Nothing new to set up.</p>
+    <!-- picture slot 1: see HANDOFF §4 -->
+  </div>
+  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-gauge"/></svg></span>
+    <div class="card-title">2. Checked in about a minute</div>
+    <p>Measured on your own log, not on someone else's log.</p>
+    <!-- picture slot 2: see HANDOFF §4 -->
+  </div>
+  <div class="card"><span class="ico c-tele sm" aria-hidden="true"><svg><use href="../icons.svg#i-scale"/></svg></span>
+    <div class="card-title">3. Train, or try again</div>
+    <p>Side by side, counted in tries. Or &ldquo;can't tell yet&rdquo;, and what is missing.</p>
+    <!-- picture slot 3: see HANDOFF §4 -->
+  </div>
+</div>
+
+<h3>Training costs money. Trying again costs money too.</h3>
+<p>Pick on a hunch and you may pay for the wrong one. Check your log first.</p>
+
+<h3>What it answers</h3>
+<ul class="prod-list">
+  <li><b>What to record.</b> The eleven things a useful log records, each marked recorded, partly recorded or
+  missing: every action and what came back, a task name, whether each conversation worked and who decided that, the
+  tokens each one used, and more. <span class="proof">The full list, as the report shows it on a made-up log:
+  <a href="example-report.html#p-record">What your log records</a>.</span></li>
+  <li><b>How much is enough.</b> Each task tried 8 times, each marked worked or failed: then you can see how much
+  trying again already fixes. And about 5,000 conversations that worked, each saying who decided it worked, before
+  training. <span class="proof">Below this, published results go both ways: training made some models better and
+  some worse (<a href="https://arxiv.org/abs/2508.18669">MUA-RL</a>;
+  <a href="https://arxiv.org/abs/2504.13958">ToolRL</a>). The line is a rough guide, not a measured minimum. Many
+  different tasks tell you more than many copies of a few.</span></li>
+  <li><b>Train, or try again.</b> Two cards side by side, counted in tries: what letting the agent try again does,
+  measured on your log, and a rough range for training a small model, from published studies.
+  <span class="proof">Each card says how sure it is, what it rests on and what would change it. With too little to go
+  on, it says &ldquo;can't tell yet&rdquo; and what to collect.</span></li>
+</ul>
+
+<h3>What it says on a made-up log</h3>
+<p>The <a href="example-report.html">example report</a> reads a made-up support log: 16 conversations about 2 tasks,
+each task tried 8 times. Its numbers show how the report reads; they say nothing about your agent.</p>
+<table>
+  <tr><th>Question</th><th>On the made-up log</th></tr>
+  <tr><td>What to record</td><td>10 of 11 things recorded; the optional one, a copy of the records before the agent
+  starts, is not</td></tr>
+  <tr><td>Enough to train?</td><td>11 conversations worked; can't tell below 5,000</td></tr>
+  <tr><td>Train, or try again?</td><td>Can't tell yet: only 2 tasks were tried at least 8 times, and it takes 12</td></tr>
+  <tr><td>Fix first</td><td>The made-up IDs: in 4 of the 16 places where the agent used an ID, nobody had given it
+  and it had not looked it up</td></tr>
+</table>
+
+<h3 id="run">Running it yourself</h3>
+<p>The code is not public yet. The <a href="example-report.html">example report</a> shows what it makes: the page
+you would get on your own log, here on a made-up one.</p>
+<p class="caveat">It reads OpenAI chat, OpenTelemetry GenAI, Arize Phoenix, LangSmith, Langfuse, Claude Code,
+ShareGPT, Microsoft ToolTalk, CSV / Excel and JSON lines. A log it cannot read gets no report, and it says why.</p>
+
+<h3>Private by design</h3>
+<ul>
+  <li>It runs on your computer. Nothing is uploaded to us or to anyone else.</li>
+  <li>It makes no network or API call, and runs on the CPU.</li>
+  <li>It reads only the file you give it, and never changes it.</li>
+</ul>
+
+<h3>Neutral by design</h3>
+<ul class="prod-list">
+  <li><b>No training platform pays us,</b> so the advice doesn't depend on which way you go. It includes
+  &ldquo;don't train&rdquo;.</li>
+  <li><b>Every sentence points to its source:</b> a reading from your own log, or a published result named with its
+  paper. When there isn't enough to go on, the report says it can't tell.</li>
+  <li><b>We don't promise that training will help.</b></li>
+</ul>
+
+<h3>After the report</h3>
+<ul>
+  <li><b>Train it yourself,</b> on any platform you like. A log of conversations and tool calls is enough to train by
+  copying the examples that worked; training by trial and reward also needs a way to score each try. The report
+  shows which conversations worked and which had problems. Not built yet: a list of the ones to train on.</li>
+  <li><b>Compare after training</b> (not built yet): give it the trained agent's new log as well, and it compares it
+  with your untrained agent trying again at the same cost, on the same tasks. With too few tasks, it says it can't
+  tell.</li>
+  <li><b>Or don't train.</b> The advice is the same whichever way you go.</li>
+</ul>
+
+<h3>Questions</h3>
+<p><b>What does &ldquo;at the same cost&rdquo; mean?</b> Letting the agent try a task again until it works takes more
+tries. The report counts on your log how many tries that takes on average, and weighs training against it: one try
+against that many. If your log records tokens, it also says how many tokens one try uses.</p>
+<p><b>When is trying again not an option?</b> When the agent can't tell, as it runs, that a try failed, or when its
+actions change records and aren't safe to do twice, such as a refund paid twice. The report asks you about both.</p>
+<p><b>How sure is the forecast?</b> Each card gives a direction and a range, not a single number. Each card says how sure
+it is, what it rests on and what would change it. With too little to go on, it says it can't tell.</p>
+<p><b>What does my log need to have?</b> Each conversation, every action the agent took and what came back, and
+ideally whether the task worked and who decided that. The report lists what is missing.</p>
+<p><b>Who can see my log?</b> No one. It is read on your computer and not sent anywhere.</p>
+
+<p class="caveat">Not built yet: comparing a trained agent's log with the untrained one, a list of conversations to
+train on, and counting who decided a success in a table export. It trains nothing. Its checks were built on one
+project's own logs; yours will break assumptions those did not.</p>
+
+<p class="prod-foot">Write-ups: <a href="../blog/train-or-try-again.html">Train, or let it try again?</a> &middot;
+<a href="../blog/before-you-train-on-agent-logs.html">Before you train on your agent's logs</a> &middot; related
+work: <a href="../blog/review-agent-logs-training.html">from agent logs to training</a>.</p>
+</div>
+
+</body>
+</html>

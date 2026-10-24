@@ -28,7 +28,7 @@ hr { border: 0; border-top: 1px solid #ddd; margin: 0; }
 /* blog */
 .post { max-width: 760px; padding-top: 36px; padding-bottom: 60px; }
 .post h1 { font-size: 32px; line-height: 1.25; margin: 0 0 6px; }
-.post .meta { color: #888; font-size: 14px; margin-bottom: 28px; }
+.post .meta { color: #767676; font-size: 14px; margin-bottom: 28px; }
 .post h3 { font-size: 21px; margin: 32px 0 10px; }
 .post p, .post li { line-height: 1.65; }
 .post table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 14px 0 18px; display: block; overflow-x: auto; }
@@ -39,7 +39,7 @@ hr { border: 0; border-top: 1px solid #ddd; margin: 0; }
 .post .caveat { color: #666; font-size: 15px; border-left: 3px solid #ddd; padding-left: 12px; }
 .postlist { list-style: none; padding: 0; }
 .postlist li { margin: 0 0 22px; }
-.postlist .date { color: #888; font-size: 14px; }
+.postlist .date { color: #767676; font-size: 14px; }
 .postlist .title { font-size: 19px; }
 .postlist .sum { color: #555; margin-top: 2px; }
 
@@ -253,7 +253,7 @@ ul.pubs .t { color: #333; }
 .prod { padding: 30px 0 28px; border-top: 1px solid #eee; }
 .prod:first-of-type { border-top: 0; padding-top: 12px; }
 .prod-top { display: flex; gap: 16px; align-items: center; }
-.prod-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+.prod-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #767676; margin-bottom: 4px; }
 .prod-h { font-size: 24px; line-height: 1.3; margin: 0; font-weight: 700; color: #222; font-style: normal; }
 .prod-sub { font-size: 17px; color: #444; margin: 14px 0 10px; }
 .prod-list { padding-left: 0; list-style: none; margin: 0 0 12px; }
@@ -266,7 +266,7 @@ ul.pubs .t { color: #333; }
 @media (max-width: 640px) { .prod-h { font-size: 20px; } .prod-top { align-items: flex-start; } }
 
 /* ── long-form review posts (Lilian Weng style) ──────────────── */
-.post .byline { color: #888; font-size: 14px; margin: 4px 0 22px; }
+.post .byline { color: #767676; font-size: 14px; margin: 4px 0 22px; }
 .post .toc { background: #f7f7f8; border: 1px solid #ececec; border-radius: 8px; padding: 12px 18px; margin: 0 0 26px; font-size: 15px; }
 .post .toc summary { cursor: pointer; font-weight: 600; }
 .post .toc ol { margin: 8px 0 2px; padding-left: 22px; }
