@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MORPHEUS: checking what an AI agent does against what you asked · Shuhui Qu</title>
-<meta name="description" content="What MORPHEUS.ai does, how it decides, where it came from, and what it still gets wrong.">
+<title>Morpheus: checking what an AI agent does against what you asked · Shuhui Qu</title>
+<meta name="description" content="What Morpheus does, how it decides, where it came from, and what it still gets wrong.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -17,16 +17,19 @@
 </nav>
 
 <div class="container post">
-<span class="ico c-verify lg" aria-hidden="true"><svg><use href="../icons.svg#i-verify"/></svg></span>
-<h1>MORPHEUS: checking what an AI agent does against what you asked</h1>
+<span class="ico logo lg" aria-hidden="true"><img src="../logos/morpheus.svg" alt=""></span>
+<h1>Morpheus: checking what an AI agent does against what you asked</h1>
 <div class="meta">October 2026</div>
+
+<p class="caveat">The web product is live in an invite-only beta at <a href="https://morpheusplan.com">morpheusplan.com</a>.
+What it does and what we measured: <a href="morpheus-second-opinion.html">A second opinion for AI-made plans</a>.</p>
 
 <p>AI agents now plan trips, write code and run experiments, and they break your requirements quietly. A travel
 plan says &ldquo;total: within budget&rdquo; and leaves out the line that puts it over. A coding agent installs the
 dependency you said not to add. An experiment loop edits the file that computes its own score. In each case the
 agent's own summary says everything is fine.</p>
 
-<p><a href="../projects/#morpheus">MORPHEUS.ai</a> is built to catch these before they matter. For every
+<p><a href="../projects/#morpheus">Morpheus</a> is built to catch these before they matter. For every
 requirement you gave the agent, it says whether the agent's plan or action <b>meets</b> it, <b>breaks</b> it, or
 <b>cannot be checked</b> &mdash; and shows the evidence for each verdict.</p>
 
@@ -41,7 +44,7 @@ requirement you gave the agent, it says whether the agent's plan or action <b>me
   says about its own work &mdash; a written total, a &ldquo;done&rdquo;, a &ldquo;tests pass&rdquo; &mdash; is never
   evidence.</li>
   <li><b>&ldquo;Cannot be checked&rdquo; is an answer.</b> If a price is a range, an item is optional, or a time
-  could be morning or evening, the verdict must hold under every reading; if it does not, MORPHEUS says it cannot
+  could be morning or evening, the verdict must hold under every reading; if it does not, Morpheus says it cannot
   tell and names what is missing, instead of guessing.</li>
 </ul>
 
@@ -86,7 +89,7 @@ itself that a person had to approve.</p>
 
 <figure class="fig">
   <img src="../figures/emnlp2025-fig1.png" alt="Neural-symbolic planning: LLM task decomposition, category-theoretic validation, bidirectional search with pullback merge">
-  <figcaption><b>Fig. 1.</b> The planning framework MORPHEUS started from: (1) a language model decomposes the task into
+  <figcaption><b>Fig. 1.</b> The planning framework Morpheus started from: (1) a language model decomposes the task into
   resources, constraints and operations; (2) category-theoretic validation checks each step (a morphism) against them;
   (3) search runs forward from the initial state w<sub>0</sub> and backward from the goal w<sup>*</sup>, and the two meet
   through a pullback merge. (Figure 1 of the author's paper, <a href="https://aclanthology.org/2025.findings-emnlp.1157/">Qu,
@@ -103,8 +106,8 @@ over unchanged: language models propose, a verifier accepts.</p>
 
 <h3>What it measured</h3>
 
-<p>On a blind held-out set of 20 planning tasks, I compared MORPHEUS with LLM judges. The judges agreed with the
-labels more often, and let 2 to 8 of 8 planted budget overruns through; MORPHEUS let none through. Its verdicts also
+<p>On a blind held-out set of 20 planning tasks, I compared Morpheus with LLM judges. The judges agreed with the
+labels more often, and let 2 to 8 of 8 planted budget overruns through; Morpheus let none through. Its verdicts also
 worked as training data: a small model fine-tuned on them for about $1 went from accepting 6 of the 8 planted
 overruns to 1, including overruns worded in a way it never saw. Details:
 <a href="judge-that-agrees-most.html">the judge that agrees most is not the safest</a>.</p>

@@ -108,16 +108,38 @@
 
   <div class="row">
     <div class="when">2019 -</div>
-    <div class="rail"><span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span></div>
+    <div class="rail"><span class="ico logo" aria-hidden="true"><img src="logos/morpheus.svg" alt=""></span></div>
     <div class="what">
-      <p>As an affiliated researcher at <b>Stanford</b>, I build <b>MORPHEUS.ai</b>, which tells a team which of
+      <p>As an affiliated researcher at <b>Stanford</b>, I build <b>Morpheus</b>, which tells a team which of
       its requirements an AI agent breaks before the agent acts. It checks every step an agent plans or takes against
       the user's requirements, keeps them across the conversation, and gives each verdict with its evidence &mdash;
       met, broken, or cannot be checked. It runs as a hook inside Claude Code, Codex and Cursor, proposes re-checked
-      fixes when a step breaks a requirement, and turns ML experiment runs into records anyone can re-verify. It grew
+      fixes when a step breaks a requirement, and turns ML experiment runs into records anyone can re-verify. Its web product, at <a href="https://morpheusplan.com">morpheusplan.com</a>, gives a second
+      opinion on any AI-made plan: the exact line that breaks a rule, by how much, and a fix that keeps the rest; it is
+      in an invite-only beta. It grew
       out of a planning engine for science that builds a knowledge graph from papers (18,600+ actions from 665
       documents, each traced to its page) and accepts a plan only after a verifier passes it. The research behind it:
       EMNLP Findings 2025 and four 2026 preprints.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="when">2026</div>
+    <div class="rail"><span class="ico logo light" aria-hidden="true"><img src="logos/honeyguide.svg" alt=""></span></div>
+    <div class="what">
+      <p>I also build <b>Honeyguide</b> (formerly Rung; <a href="https://honeyguide-trial.onrender.com">trial</a>),
+      a one-day shadow test for teams that pay for LLM APIs. It shows what a cheaper model setup would save, and what it
+      would lose in quality, on the team's own traffic before they switch.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="when">2026</div>
+    <div class="rail"><span class="ico c-tele" aria-hidden="true"><svg><use href="icons.svg#i-gauge"/></svg></span></div>
+    <div class="what">
+      <p>And <b><a href="trace-checkup/">Trace Check-up</a></b>, a small tool that reads an AI agent's log on your own
+      computer. It says what the log is missing, whether there is enough of it, and how training compares with letting
+      the agent try again &mdash; or that it can't tell yet, and what to collect.</p>
     </div>
   </div>
 
@@ -147,21 +169,22 @@
   <div class="sectitle">bio</div>
   <p>Shuhui Qu is a machine learning researcher and engineer working on reinforcement learning and on AI agents whose
   answers can be checked. At Samsung Display American Lab, Shuhui is a Senior Staff ML Engineer and the project lead
-  for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds MORPHEUS.ai,
-  which checks an AI agent's plans and actions against the user's requirements before it acts. PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
+  for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds Morpheus,
+  which checks an AI agent's plans and actions against the user's requirements before it acts (live at
+  morpheusplan.com). Shuhui also builds Honeyguide and Trace Check-up. PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
 </div>
 
 <div class="container" id="projects">
   <div class="sectitle">projects</div>
   <div class="pcards">
-    <a class="pcard" href="projects/#morpheus"><span class="ico c-verify" aria-hidden="true"><svg><use href="icons.svg#i-verify"/></svg></span>
-      <div class="pn">MORPHEUS.ai</div>
-      <div class="pd">Know which of your requirements an AI agent breaks &mdash; before it acts. Every verdict comes with its evidence.</div></a>
-    <a class="pcard" href="projects/#rung"><span class="ico c-rung" aria-hidden="true"><svg><use href="icons.svg#i-rung"/></svg></span>
-      <div class="pn">Rung</div>
-      <div class="pd">Pay for the expensive model only when the cheap one is shown wrong. One OpenAI-compatible endpoint.</div></a>
+    <a class="pcard" href="projects/#morpheus"><span class="ico logo" aria-hidden="true"><img src="logos/morpheus.svg" alt=""></span>
+      <div class="pn">Morpheus</div>
+      <div class="pd">A second opinion for any AI-made plan: the exact line that breaks a rule, by how much, and a fix that keeps the rest. Live at morpheusplan.com.</div></a>
+    <a class="pcard" href="projects/#honeyguide"><span class="ico logo light" aria-hidden="true"><img src="logos/honeyguide.svg" alt=""></span>
+      <div class="pn">Honeyguide</div>
+      <div class="pd">See what a cheaper LLM setup would save, and lose, on your own traffic &mdash; a one-day shadow test before you switch.</div></a>
     <a class="pcard" href="projects/#telemetry"><span class="ico c-tele" aria-hidden="true"><svg><use href="icons.svg#i-gauge"/></svg></span>
-      <div class="pn">trace2wm telemetry</div>
+      <div class="pn">Trace Check-up</div>
       <div class="pd">Before you train your agent, find out if it's worth it &mdash; from the logs you already have.</div></a>
   </div>
 </div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Checking what AI agents do: judges, verifiers and guardrails · Shuhui Qu</title>
-<meta name="description" content="A review of LLM judges, learned verifiers, plan verifiers, guardrails and evaluation integrity — how each works, and where MORPHEUS.ai differs.">
+<meta name="description" content="A review of LLM judges, learned verifiers, plan verifiers, guardrails and evaluation integrity — how each works, and where Morpheus differs.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -28,7 +28,7 @@ that reads what the agent did and says whether it did what was asked. This post 
 in the 2023&ndash;2026 literature: LLM judges and learned verifiers, plan verifiers, runtime guardrails for tool
 calls, and integrity checks for agents that run experiments. For each I describe how it works, what it has been
 measured to do, and where it fails. The last two sections say where my own checker,
-<a href="../projects/#morpheus">MORPHEUS.ai</a>, differs, and where the literature is ahead of it. (For what MORPHEUS
+<a href="../projects/#morpheus">Morpheus</a>, differs, and where the literature is ahead of it. (For what Morpheus
 does as a product, see <a href="morpheus.html">this post</a>.)</p>
 
 <p>Two terms are used throughout. A checker is <b>sound</b> if everything it accepts really is correct; it is
@@ -45,7 +45,7 @@ completeness for soundness. Most of the story below is about which of the two ea
     <li><a href="#repair">Repair loops</a></li></ol></li>
   <li><a href="#guardrails">Guardrails for tool calls</a></li>
   <li><a href="#integrity">When agents game the evaluator</a></li>
-  <li><a href="#how-we-differ">Where MORPHEUS differs</a></li>
+  <li><a href="#how-we-differ">Where Morpheus differs</a></li>
   <li><a href="#ahead">Where the literature is ahead</a></li>
   <li><a href="#references">References</a></li>
 </ol>
@@ -232,9 +232,9 @@ positive on human review <a class="cite" href="#ref-31">(Chan et al. 2024)</a>. 
 experiment loop, protects its evaluator by instruction alone (&ldquo;It is read-only&rdquo;) and keeps any change that
 lowers the metric after a single run <a class="cite" href="#ref-32">(Karpathy 2026)</a>.</p>
 
-<h2 id="how-we-differ">Where MORPHEUS differs</h2>
+<h2 id="how-we-differ">Where Morpheus differs</h2>
 
-<p>MORPHEUS applies the LLM-Modulo idea &mdash; a model proposes, a checker decides &mdash; to the requirements a user
+<p>Morpheus applies the LLM-Modulo idea &mdash; a model proposes, a checker decides &mdash; to the requirements a user
 states in plain language, and makes the checker's own uncertainty explicit. It descends from my work on
 category-theoretic planning <a class="cite" href="#ref-33">(Qu et al. 2025)</a>, where every precondition of a plan step
 is marked satisfied, violated or unknown, and unknowns are resolved by a targeted question or a bridging step rather
@@ -243,7 +243,7 @@ checked.</p>
 
 <figure class="fig">
   <img src="../figures/emnlp2025-fig1.png" alt="Neural-symbolic planning: LLM task decomposition, category-theoretic validation, bidirectional search with pullback merge">
-  <figcaption><b>Fig. 7.</b> The planning framework MORPHEUS started from: (1) a language model decomposes the task into
+  <figcaption><b>Fig. 7.</b> The planning framework Morpheus started from: (1) a language model decomposes the task into
   resources, constraints and operations; (2) category-theoretic validation checks each step (a morphism) against them;
   (3) search runs forward from the initial state w<sub>0</sub> and backward from the goal w<sup>*</sup>, and the two meet
   through a pullback merge. (Figure 1 of the author's paper, <a href="https://aclanthology.org/2025.findings-emnlp.1157/">Qu,
@@ -260,14 +260,14 @@ checked.</p>
 <div class="diff">
 <ul>
   <li><b>The agent's own words are never evidence.</b> A plan's &ldquo;total: within budget&rdquo; plays the role that
-  the rewritten reasoning plays in Gaming the Judge. MORPHEUS adds the plan's lines itself; a verdict rests only on
+  the rewritten reasoning plays in Gaming the Judge. Morpheus adds the plan's lines itself; a verdict rests only on
   arithmetic, clock placement and quoted text that code can check.</li>
   <li><b>Free text, without a trusted parser.</b> A model reads which line belongs to which day or total, and a second
   model confirms the reading &mdash; the reading step sits inside the evidence discipline instead of before it.</li>
   <li><b>The checker itself can say &ldquo;cannot be checked&rdquo;.</b> Every plan verifier surveyed returns a binary
-  verdict; when a reading is not unique (a price range, an optional item, am/pm), MORPHEUS abstains and says what is
+  verdict; when a reading is not unique (a price range, an optional item, am/pm), Morpheus abstains and says what is
   missing.</li>
-  <li><b>The user's requirements, kept across turns.</b> Guardrails enforce someone else's policy; MORPHEUS enforces
+  <li><b>The user's requirements, kept across turns.</b> Guardrails enforce someone else's policy; Morpheus enforces
   the user's own requirements, held in a ledger that lasts the whole conversation. Multi-turn planning studies measure
   whether the planner remembers constraints; to our knowledge none adds an independent checker over such a ledger.</li>
   <li><b>&ldquo;Done&rdquo; is checked.</b> As a hook in Claude Code, Codex and Cursor it blocks a tool call only when
@@ -281,9 +281,9 @@ checked.</p>
 </div>
 
 <p>Our measurements fit the literature's pattern. On a held-out set of 20 planning tasks with 142 requirement labels,
-LLM judges agreed with the labels 72&ndash;83 % of the time against MORPHEUS's 44 %. But the two non-reasoning judges
+LLM judges agreed with the labels 72&ndash;83 % of the time against Morpheus's 44 %. But the two non-reasoning judges
 (gpt-4.1, gpt-4.1-mini) each accepted six requirements that were broken, and when one extra cost line worth 60 % of the
-budget was planted in 8 plans, the judges accepted 2 to 8 of the 8; MORPHEUS accepted none of either
+budget was planted in 8 plans, the judges accepted 2 to 8 of the 8; Morpheus accepted none of either
 (<a href="judge-that-agrees-most.html">details</a>; our measurement). As a hook, replayed on 4,750 tool calls from 20 real
 coding sessions, it blocked 10 calls, all real violations (our measurement).</p>
 
@@ -291,18 +291,18 @@ coding sessions, it blocked 10 calls, all real violations (our measurement).</p>
 <ul>
   <li><b>Coverage and recall.</b> Rule-based checking under-reports success: AgentRewardBench's rule-based evaluator
   has 83.8 precision but 55.9 recall, against 83.1 recall for a GPT-4o judge <a class="cite" href="#ref-11">(Lù et al.
-  2025)</a>. MORPHEUS's price is the same: it said &ldquo;cannot be checked&rdquo; on 39 % of requirements that were
+  2025)</a>. Morpheus's price is the same: it said &ldquo;cannot be checked&rdquo; on 39 % of requirements that were
   met, and confirmed none of 11 honest budgets with buffers and options (our measurement).</li>
-  <li><b>Guarantees.</b> Trust or Escalate's abstention comes with a provable agreement guarantee; MORPHEUS's is
+  <li><b>Guarantees.</b> Trust or Escalate's abstention comes with a provable agreement guarantee; Morpheus's is
   triggered by rules and has none. Progent, FORGE, VIGIL and CaMeL offer formal soundness for their policies.</li>
   <li><b>Solving, not just checking.</b> Solver pipelines can show that a feasible plan exists, explain why a request
-  is impossible, and return an optimal plan. MORPHEUS only checks.</li>
+  is impossible, and return an optimal plan. Morpheus only checks.</li>
   <li><b>Scale.</b> 142 labels and 20 tasks are small beside benchmarks of 1,302 trajectories or 800 tasks, so
-  MORPHEUS's zero counts carry wide confidence intervals; and the labels came from two model labellers and an
+  Morpheus's zero counts carry wide confidence intervals; and the labels came from two model labellers and an
   adjudicating model, with a human check still to do.</li>
   <li><b>Measured recall for Stop.</b> &ldquo;10 blocks, all real&rdquo; measures precision only; without planted
   violations in the replay there is no recall estimate. Record has run only on a toy experiment loop.</li>
-  <li><b>A warning that applies to us.</b> A small judge distilled from MORPHEUS's verdicts would inherit the
+  <li><b>A warning that applies to us.</b> A small judge distilled from Morpheus's verdicts would inherit the
   hackability of learned verifiers if it were ever used as an RL reward, and should be red-teamed with master-key and
   confident-claim inputs first.</li>
 </ul>

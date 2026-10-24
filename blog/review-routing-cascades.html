@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Routing LLM calls: predict the model, or verify the answer? · Shuhui Qu</title>
-<meta name="description" content="A review of LLM routers and model cascades — how each decides which model answers, what generalizes, and where Rung differs.">
+<meta name="description" content="A review of LLM routers and model cascades — how each decides which model answers, what generalizes, and where Rung (now Honeyguide) differs.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -26,7 +26,7 @@ the one that gets it right. Two strategies try to pay only for what a request ne
 <i>before</i> the call: it reads the prompt and predicts which model should answer. A <b>cascade</b> decides
 <i>after</i>: it lets a cheap model answer first, checks the answer, and calls a stronger model only if the check
 fails. This post reviews both families in the 2023&ndash;2026 literature, what generalizes and what does not, and
-where my gateway <a href="../projects/#rung">Rung</a> differs. (For how Rung is built and used, see
+where my gateway <a href="../projects/#honeyguide">Rung (now Honeyguide)</a> differs. (For how Rung is built and used, see
 <a href="dont-predict-verify.html">this post</a>.)</p>
 
 <details class="toc" open><summary>Table of Contents</summary>
@@ -36,7 +36,7 @@ where my gateway <a href="../projects/#rung">Rung</a> differs. (For how Rung is 
   <li><a href="#cascades">Cascades: let the cheap model try, then check</a>
     <ol><li><a href="#signals">Which signal decides escalation</a></li><li><a href="#code">Cascades for code and agents</a></li></ol></li>
   <li><a href="#theory">One theory for both</a></li>
-  <li><a href="#how-we-differ">Where Rung differs</a></li>
+  <li><a href="#how-we-differ">Where Rung (now Honeyguide) differs</a></li>
   <li><a href="#ahead">Where the literature is ahead</a></li>
   <li><a href="#references">References</a></li>
 </ol>
@@ -148,7 +148,7 @@ Their conclusion is the one that matters for practice: everything rests on the q
 cascading, robust post-hoc quality estimation &hellip; is critical&rdquo; <a class="cite" href="#ref-25">(Dekoninck et al.
 2024)</a>. A router lives or dies by what the prompt reveals; a cascade, by what its check can see in the answer.</p>
 
-<h2 id="how-we-differ">Where Rung differs</h2>
+<h2 id="how-we-differ">Where Rung (now Honeyguide) differs</h2>
 
 <p>Rung is a cascade: an OpenAI-compatible gateway that tries the cheapest model, checks the answer, and escalates only
 on a verified failure. Its own measurements line up with the literature above. Predicting the best model from the

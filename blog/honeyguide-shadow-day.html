@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can a cheaper model do your work? Measure it before you switch · Shuhui Qu</title>
+<meta name="description" content="Why my model router became Honeyguide, a one-day shadow test: what a cheaper LLM setup would save and lose on your own traffic, measured before you switch. With what our test showed and three surprises.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico logo light lg" aria-hidden="true"><img src="../logos/honeyguide.svg" alt=""></span>
+<h1>Can a cheaper model do your work? Measure it before you switch</h1>
+<div class="meta">October 2026</div>
+
+<p>Many teams send every request to the top model. Nobody wants to be the person who switched to a cheaper model and
+broke something. But a cheaper model may be good enough for most of the traffic. The real question is how to know
+before you switch.</p>
+
+<p>I started on this question with a model router, <a href="dont-predict-verify.html">Rung</a>. Two findings changed
+what I build.</p>
+<ul>
+  <li><b>Predicting the model did not work.</b> Reading the prompt to predict which model is enough recovered none of
+  the available savings in our tests, across every set of features we tried.</li>
+  <li><b>Routing became free.</b> In August 2026 several large cloud platforms began to offer model routing as a free
+  feature. A router alone is no longer something a team needs to buy.</li>
+</ul>
+<p>So the check and the report became the product, not the router. It is now called
+<a href="https://honeyguide-trial.onrender.com">Honeyguide</a>.</p>
+
+<h3>A shadow day</h3>
+<ul>
+  <li><b>Change one URL.</b> Point your OpenAI-format client at Honeyguide for one day. Your users keep your current
+  model's answers; nothing changes for them.</li>
+  <li><b>Behind each request</b>, Honeyguide also lets the cheap model answer first. A check decides if that answer
+  is good enough, and a failed answer climbs to a stronger model, under a hard cap per request. Honeyguide records
+  what this setup would have answered and what it would have cost.</li>
+  <li><b>You mark about 30 answers</b> right or wrong. The report then says whether a cheaper setup is enough for your
+  traffic. Sometimes the answer is one cheaper model, not a cascade.</li>
+</ul>
+
+<figure class="fig">
+  <img src="../figures/honeyguide-report.gif" alt="Terminal output of the Honeyguide report: pro-max (current) $7.75 per 1,000 requests, 77 of 100 right; the cascade $1.86, 69 of 100 right, 76% less cost, 8 points less quality. Our test, not a customer's." loading="lazy">
+  <figcaption><b>Fig. 1.</b> The report, as the tool prints it, on our own test of 100 short questions (not a
+  customer's traffic).</figcaption>
+</figure>
+
+<h3>What our test showed</h3>
+<p>Our test used 100 short questions from RouterArena on a ladder of DeepSeek models, on 26 September 2026.</p>
+<table>
+  <tr><th>Setup</th><th>Right</th><th>$ per 1,000 requests</th></tr>
+  <tr><td>Top model for everything (pro-max)</td><td>77%</td><td>7.75</td></tr>
+  <tr><td>Honeyguide cascade</td><td>69%</td><td>1.86</td></tr>
+  <tr><td>One cheaper model for everything (pro-low)</td><td>73%</td><td>1.43</td></tr>
+  <tr><td>Cheapest model for everything (chat)</td><td>66%</td><td>0.20</td></tr>
+</table>
+<p>The cascade cost 76% less than the top model, for 8 points of quality. But on this traffic one cheaper model did
+better than the cascade on both counts: more answers right, and a lower bill. That is exactly the kind of answer the
+report exists to give.</p>
+
+<h3>Three surprises</h3>
+<ol>
+  <li><b>A check can cost more than a cheap answer.</b> One verdict cost $0.00055; one answer from the cheapest model
+  cost $0.00019. A cascade saves money only when the check is cheap next to the answers it saves you from buying.</li>
+  <li><b>Embeddings cannot judge answers.</b> We asked whether an embedding puts &ldquo;the code is correct&rdquo;
+  nearer to &ldquo;the code is incorrect&rdquo; or to &ldquo;the implementation is right&rdquo;. Both encoders we
+  tried, text-embedding-3-large too, put the opposite nearer. Raw embedding similarity cannot tell a right answer
+  from a wrong one.</li>
+  <li><b>Weak judges mislead.</b> Our rule now: the judge must be at least as strong as the model it checks.</li>
+</ol>
+
+<h3>Status</h3>
+<p>The trial is live and invite-only: apply at
+<a href="https://honeyguide-trial.onrender.com">honeyguide-trial.onrender.com</a>. Applications are open, and no team
+has run a shadow day yet. Honeyguide is open source: the code is published when the first team applies.</p>
+
+<p class="caveat">Our test: 100 questions, not reviewed by anyone outside. The set may be easy, because a cheap model
+came close to the top one. The DeepSeek models behind these numbers have since been renamed or retired, so the numbers
+may not hold on the current models. The pro-low row is a separate run, with replies capped at 700 tokens.</p>
+
+<p class="prod-foot">Earlier: <a href="dont-predict-verify.html">Don't predict, verify: building a model router</a>
+&middot; related work: <a href="review-routing-cascades.html">routers and cascades</a> &middot; project:
+<a href="../projects/#honeyguide">Honeyguide</a>.</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A second opinion for AI-made plans · Shuhui Qu</title>
+<meta name="description" content="What building Morpheus (morpheusplan.com) taught me: an independent check for AI-made plans that points to the exact line that breaks a rule, says by how much, and offers only fixes that keep the rest of the plan.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container navrow">
+    <a class="brand" href="../">Shuhui Qu</a>
+    <span class="navlinks"><a href="../">Home</a><a href="../projects/">Projects</a><a href="./">Blog</a></span>
+  </div>
+</nav>
+
+<div class="container post">
+<span class="ico logo lg" aria-hidden="true"><img src="../logos/morpheus.svg" alt=""></span>
+<h1>A second opinion for AI-made plans</h1>
+<div class="meta">October 2026</div>
+
+<p>People already ask an AI to plan a day trip, a dinner or a study weekend, and they give it hard limits: a budget,
+a time to be home, a thing that must not be in the plan. The plan comes back looking right, and the AI's own check
+says &ldquo;looks good&rdquo;. Then a detail breaks. Lunch for five costs twice what the plan says. Sunday runs ten
+minutes over. The satay sauce has peanuts in it.</p>
+
+<p><a href="https://morpheusplan.com">Morpheus</a> is built for exactly this. It is the web product of my research on
+checking what AI agents do (<a href="../projects/#morpheus">project page</a>). Paste a plan from anywhere &mdash; ChatGPT, Claude, Gemini, a friend's text
+or your own notes &mdash; and write your rules the way you would say them: &ldquo;home by 6&rdquo;, &ldquo;$60
+max&rdquo;. It checks every line of the plan against every rule.</p>
+
+<h3>What it does</h3>
+<ul>
+  <li><b>An independent check.</b> The plan is not graded by the AI that wrote it. A rule counts as met only when our
+  checker and a second AI reader agree, and the second reader can only make a result stricter.</li>
+  <li><b>The exact line, and by how much.</b> Not &ldquo;might be a bit tight&rdquo;, but &ldquo;7 h 10 min, 10 min
+  over your 7 h limit&rdquo;, on the part of the plan where it happens.</li>
+  <li><b>Fixes that keep the plan whole.</b> Every fix is checked again before you see it. A fix that drops lunch, or
+  only edits a number until the check passes, is never offered.</li>
+  <li><b>It says who decided.</b> Calculated, judged by AI, or confirmed by you: each answer has its own label. When a
+  fact is missing, the row says &ldquo;unclear&rdquo; and asks you, instead of giving a false &ldquo;met&rdquo;.</li>
+</ul>
+
+<figure class="fig">
+  <img src="../figures/morpheus-exact-line.jpg" alt="A result row: Day 2, Sunday, not met. No more than 7 hours of study per day: 7 h 10 min, 10 min over your 7 h limit." loading="lazy">
+  <figcaption><b>Fig. 1.</b> A rule that breaks, on the line where it breaks, with the amount. From a Morpheus result
+  page (test run).</figcaption>
+</figure>
+
+<figure class="fig">
+  <img src="../figures/morpheus-fix.jpg" alt="A proposed fix: the review block 16:40 to 17:40 becomes 16:40 to 17:30, and Sunday goes from 7 h 10 min to 7 h, within the limit. Button: Apply this fix." loading="lazy">
+  <figcaption><b>Fig. 2.</b> The fix changes one line and shows what it does to Sunday before you apply it. From a
+  Morpheus result page (test run).</figcaption>
+</figure>
+
+<h3>What we measured</h3>
+<ul>
+  <li><b>Planted mistakes.</b> Each test hides 20 mistakes in real plans. The default check found 19 to 20 of the 20,
+  and it called no broken plan fine.</li>
+  <li><b>Simulated users.</b> In our latest test, AI agents playing users did 10 tasks. 9 ended with every rule met.
+  By the plan's own numbers, the page marked no broken rule as met. A task cost $0.116, down from $0.259 one test
+  earlier.</li>
+  <li><b>Fewer questions.</b> People do not like to answer many questions about their own plan. The next version (not
+  on the site yet) asks only when the plan cannot be used without your answer. Shown again with that rule, the 593
+  task pages among 1,389 saved results needed 0.26 answers per task on the first visit, down from 1.32.</li>
+</ul>
+
+<h3>What surprised us</h3>
+<p>The arithmetic was not the hard part; the world was. One test plan took a family up 香山 in Beijing by cable car. A
+web search of the plan's key facts found that the cable car is closed for renovation during the October 2026
+red-leaf festival (<a href="https://news.bjd.com.cn/2026/10/16/11997108.shtml">北京晚报, 16 October 2026</a>). The plan
+did not know about it. On another test trip, for five people, the fix step saw that five people need two taxis, not
+one.</p>
+
+<p>So the next step is a web check of each plan's key facts, such as opening hours and closures, before the page says
+that a plan works.</p>
+
+<p class="caveat">All numbers are from our internal tests in October 2026, with planted mistakes and with simulated
+users (AI agents), not real users. Morpheus is in an invite-only beta and is free during the beta. To ask for an
+invite, write to <a href="mailto:info@morpheusplan.com">info@morpheusplan.com</a>. More on the product's own blog:
+<a href="https://morpheusplan.com/blog/how-it-works">how the checker decides</a>.</p>
+
+<p class="prod-foot">Earlier: <a href="morpheus.html">Morpheus: checking what an AI agent does against what you
+asked</a> &middot; project: <a href="../projects/#morpheus">Morpheus</a>.</p>
+</div>
+
+</body>
+</html>

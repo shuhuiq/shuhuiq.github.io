@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Don't predict, verify: building a model router · Shuhui Qu</title>
-<meta name="description" content="What building Rung, a verified cascade router, taught me about routing LLM requests: prediction from the prompt failed; escalating on evidence worked; the check is the hard part.">
+<meta name="description" content="What building Rung (now Honeyguide), a verified cascade router, taught me about routing LLM requests: prediction from the prompt failed; escalating on evidence worked; the check is the hard part.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -17,12 +17,15 @@
 </nav>
 
 <div class="container post">
-<span class="ico c-rung lg" aria-hidden="true"><svg><use href="../icons.svg#i-rung"/></svg></span>
+<span class="ico logo light lg" aria-hidden="true"><img src="../logos/honeyguide.svg" alt=""></span>
 <h1>Don't predict, verify: building a model router</h1>
 <div class="meta">October 2026</div>
 
+<p class="caveat">Rung is now <a href="../projects/#honeyguide">Honeyguide</a>: the check and the report became the
+product. See <a href="honeyguide-shadow-day.html">Can a cheaper model do your work?</a></p>
+
 <p>Most model routers read the prompt and predict which model should answer it. I built
-<a href="../projects/#rung">Rung</a>, which does the opposite: it sends the request to the cheapest model first,
+<a href="../projects/#honeyguide">Rung</a>, which does the opposite: it sends the request to the cheapest model first,
 checks the answer, and moves up to a more expensive model only when the check says the answer is wrong. To the
 caller it is one OpenAI-compatible endpoint; every response also says which model answered, what each attempt cost,
 and whether anything checked it. These are the four things I learned building it.</p>

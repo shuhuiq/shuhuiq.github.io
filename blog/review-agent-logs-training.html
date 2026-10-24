@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>From agent logs to training: what the papers measure, and what they skip · Shuhui Qu</title>
-<meta name="description" content="A review of training agents from their traces — trajectory data, simulators, RL, training versus retrying, evaluation validity — and where trace2wm telemetry differs.">
+<meta name="description" content="A review of training agents from their traces — trajectory data, simulators, RL, training versus retrying, evaluation validity — and where Trace Check-up differs.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -26,7 +26,7 @@ someone asks whether to train a smaller model on them. The literature has a lot 
 from trajectories, and much less about the question the team actually has: <i>should</i> we, on these logs, and will it
 beat simply letting the agent try again? This post reviews what is known &mdash; trajectory data and fine-tuning,
 simulators built from traces, reinforcement learning, training versus retrying, and whether measured gains are real
-&mdash; and where my tool <a href="../projects/#telemetry">trace2wm telemetry</a> differs. (For what the tool does, see
+&mdash; and where my tool <a href="../projects/#telemetry">Trace Check-up</a> differs. (For what the tool does, see
 <a href="before-you-train-on-agent-logs.html">this post</a>.)</p>
 
 <p>Terms used below: <b>SFT</b> (supervised fine-tuning) trains a model to copy example trajectories; <b>RL</b>
@@ -41,7 +41,7 @@ simulators built from traces, reinforcement learning, training versus retrying, 
   <li><a href="#retry">Train, or try again?</a></li>
   <li><a href="#validity">Is the measured gain real?</a></li>
   <li><a href="#forecast">Forecasting before training</a></li>
-  <li><a href="#how-we-differ">Where trace2wm telemetry differs</a></li>
+  <li><a href="#how-we-differ">Where Trace Check-up differs</a></li>
   <li><a href="#ahead">Where the literature is ahead</a></li>
   <li><a href="#references">References</a></li>
 </ol>
@@ -138,7 +138,7 @@ tasks, so a trivial agent scored 38 % and beat a GPT-4o agent; flaws like this m
 100 % in relative terms <a class="cite" href="#ref-19">(Zhu et al. 2025)</a>. Many agent benchmarks &ldquo;have inadequate
 holdout sets, and sometimes none at all&rdquo;, and ignore cost <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a>.
 Training on the test task confounds comparisons unless every arm is trained on the same task data
-<a class="cite" href="#ref-21">(Dominguez-Olmedo et al. 2024)</a>. The mistakes trace2wm telemetry was built to catch
+<a class="cite" href="#ref-21">(Dominguez-Olmedo et al. 2024)</a>. The mistakes Trace Check-up was built to catch
 &mdash; each of which happened in my own trace2wm project &mdash; line up with published ones:</p>
 
 <table>
@@ -159,7 +159,7 @@ fine-tuning data <a class="cite" href="#ref-22">(Snell et al. 2024)</a>, and obs
 Learnability is estimated online, from the policy's own samples during training <a class="cite" href="#ref-8">(Foster et al.
 2025)</a>. None of it works read-only from a team's logs.</p>
 
-<h2 id="how-we-differ">Where trace2wm telemetry differs</h2>
+<h2 id="how-we-differ">Where Trace Check-up differs</h2>
 
 <div class="diff">
 <ul>
@@ -187,14 +187,14 @@ Learnability is estimated online, from the policy's own samples during training 
 <h2 id="ahead">Where the literature is ahead</h2>
 <ul>
   <li><b>Real training, measured.</b> The papers above train end to end and report gains &mdash; LOOP on AppWorld,
-  DreamGym, MUA-RL, SWE-Gym. trace2wm telemetry forecasts; it does not train.</li>
+  DreamGym, MUA-RL, SWE-Gym. Trace Check-up forecasts; it does not train.</li>
   <li><b>Scale.</b> Corpora of 1.3 million trajectories, 90,000 synthetic trajectories, dual-control simulators with
-  annotated error rates. trace2wm was built on one project's corpora and mistakes; another team's logs will break
+  annotated error rates. Trace Check-up was built on one project's corpora and mistakes; another team's logs will break
   assumptions ours did not.</li>
-  <li><b>Theory of retrying versus training.</b> The literature has one for math and code; trace2wm's own equal-spend
+  <li><b>Theory of retrying versus training.</b> The literature has one for math and code; Trace Check-up's own equal-spend
   comparison is not built yet, so its training side still rests on published ranges.</li>
   <li><b>Learnability from someone else's logs.</b> We found no method that estimates learnability offline from another
-  policy's logs &mdash; which is what trace2wm's learnability stage attempts, and so remains unvalidated.</li>
+  policy's logs &mdash; which is what Trace Check-up's learnability stage attempts, and so remains unvalidated.</li>
 </ul>
 
 <h2 id="references">References</h2>
