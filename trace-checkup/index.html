@@ -1,596 +1,778 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trace Check-up · Shuhui Qu</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%236366f1%22/%3E%3Cpath%20d%3D%22M13%2044h26M13%2053h15%22%20fill%3D%22none%22%20stroke%3D%22%23e0e7ff%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M11%2025h11l7%208%2020-21%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%226.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
-<meta name="description" content="A neutral check-up for AI-agent logs, run on your own computer: what to record, how much is enough, and how training compares with letting the agent try again, counted in tries.">
-<style>:root{
+<title>Trace Check-up</title>
+<meta name="description" content="Trace Check-up helps you post-train your AI agent on the logs you already have: what to collect, the data ready for your training platform, and a check of the trained model on held-out tasks at the same cost.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%236366f1'/%3E%3Cpath d='M13 44h26M13 53h15' fill='none' stroke='%23e0e7ff' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M11 25h11l7 8 20-21' fill='none' stroke='%23fff' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>document.documentElement.classList.add("js")</script>
+<style>
+:root{
   color-scheme:light;
-  --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eceff3; --line:#dce1e8;
-  --ink:#12161c; --ink-2:#4b5261; --ink-3:#5f6776;
-  --accent:#1d5fc4; --accent-wash:rgba(29,95,196,.08); --on-accent:#fff;
-  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --none:#8a93a3;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
-  --f-cap:12px; --f-ui:13px; --f-body:15px; --f-h2:18px; --f-h1:24px; --f-fig:32px;
-  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px;
-  --r1:6px; --r2:10px;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#fbfbfa; --surface:#ffffff; --surface-2:#f4f4f2; --line:#e6e6e3; --line-strong:#d4d4cf;
+  --ink:#0a0a0b; --ink-2:#45454d; --ink-3:#5f5f68;
+  --accent:#4338ca; --accent-wash:rgba(67,56,202,.07);
+  --mark:#6366f1; --mark-tint:#e0e7ff;
+  --cta:#0a0a0b; --on-cta:#ffffff;
+  --ok:#166534; --ok-wash:rgba(22,101,52,.08);
+  --bad:#9f1239; --bad-wash:rgba(159,18,57,.07);
+  --soon:#5f5f68; --soon-wash:#efeff0;
+  --warn:#92400e; --warn-wash:rgba(217,119,6,.08); --warn-line:rgba(217,119,6,.35);
+  --wash-1:rgba(99,102,241,.16); --wash-2:rgba(14,165,233,.11); --wash-3:rgba(168,85,247,.10);
+  --band-bg:#14141a; --band-surface:#1c1c24; --band-line:#2c2c36; --band-ink:#f5f5f6; --band-ink-2:#babac4; --band-accent:#a5b4fc;
+  --code-bg:#14141a; --code-ink:#e6e6ea; --code-key:#a5b4fc; --code-dim:#a3a3ad;
+  --sans:"Inter","InterVariable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --t-xs:13px; --t-s:14px; --t-m:16px; --t-lede:18px; --t-h3:20px;
+  --t-h2:clamp(28px,3.6vw,44px); --t-h1:clamp(40px,6vw,72px);
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px; --sp8:64px;
+  --band:clamp(48px,8vw,96px); --gutter:max(16px,calc((100% - 1200px)/2));
+  --r-card:20px; --r-s:10px; --r-pill:999px;
+  --ease:cubic-bezier(.2,.7,.2,1); --dur-fast:150ms; --dur:200ms; --dur-reveal:400ms;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   color-scheme:dark;
-  --bg:#0f1216; --surface:#161a20; --surface-2:#1e232b; --line:#2a3039;
-  --ink:#eef1f5; --ink-2:#b2b9c5; --ink-3:#8b94a3;
-  --accent:#6fa4ff; --accent-wash:rgba(111,164,255,.12); --on-accent:#0f1216; --crit:#e85d5d;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70;}}
+  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c; --line-strong:#34343c;
+  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
+  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
+  --cta:#f5f5f6; --on-cta:#09090b;
+  --ok:#4ade80; --ok-wash:rgba(74,222,128,.10);
+  --bad:#fda4af; --bad-wash:rgba(253,164,175,.10);
+  --soon:#a3a3ad; --soon-wash:#1f1f25;
+  --warn:#fbbf24; --warn-wash:rgba(251,191,36,.10); --warn-line:rgba(251,191,36,.35);
+  --wash-1:rgba(99,102,241,.24); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14);
+  --band-bg:#15152a; --band-surface:#1d1d36; --band-line:#2f2f52; --band-ink:#f5f5f6; --band-ink-2:#c0c0d0; --band-accent:#c7d2fe;
+  --code-bg:#0d0d12; --code-ink:#e6e6ea; --code-key:#c7d2fe; --code-dim:#a3a3ad;}}
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0f1216; --surface:#161a20; --surface-2:#1e232b; --line:#2a3039;
-  --ink:#eef1f5; --ink-2:#b2b9c5; --ink-3:#8b94a3;
-  --accent:#6fa4ff; --accent-wash:rgba(111,164,255,.12); --on-accent:#0f1216; --crit:#e85d5d;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70;}
+  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c; --line-strong:#34343c;
+  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
+  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
+  --cta:#f5f5f6; --on-cta:#09090b;
+  --ok:#4ade80; --ok-wash:rgba(74,222,128,.10);
+  --bad:#fda4af; --bad-wash:rgba(253,164,175,.10);
+  --soon:#a3a3ad; --soon-wash:#1f1f25;
+  --warn:#fbbf24; --warn-wash:rgba(251,191,36,.10); --warn-line:rgba(251,191,36,.35);
+  --wash-1:rgba(99,102,241,.24); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14);
+  --band-bg:#15152a; --band-surface:#1d1d36; --band-line:#2f2f52; --band-ink:#f5f5f6; --band-ink-2:#c0c0d0; --band-accent:#c7d2fe;
+  --code-bg:#0d0d12; --code-ink:#e6e6ea; --code-key:#c7d2fe; --code-dim:#a3a3ad;}
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:var(--f-body)/1.55 var(--sans)}
-button,select,input{font:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
-h1,h2,h3{text-wrap:balance;margin:0}
-code,.mono{font-family:var(--mono);font-size:.92em}
-.num{font-variant-numeric:tabular-nums}
-
-
-.bar{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp4);align-items:center;padding:var(--sp3) var(--sp5);background:var(--surface);border-bottom:1px solid var(--line)}
-.bar .brand{font-weight:650;font-size:var(--f-ui);letter-spacing:.01em}
-.bar .meta{color:var(--ink-3);font-size:var(--f-cap);display:flex;flex-wrap:wrap;gap:var(--sp3)}
-
-.bar-top,.bar-sub{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp1) var(--sp4)}
-.bar:has(.bar-top){padding-top:var(--sp1);padding-bottom:var(--sp2);row-gap:0}
-.bar-top .brand{color:var(--ink);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
-.bar-top .brand:hover{text-decoration:underline}
-.bar .lang{margin-left:auto;font-size:var(--f-ui);color:var(--ink-2);text-decoration:none;border:1px solid var(--line);
-  border-radius:999px;padding:0 14px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;
-  justify-content:center;white-space:nowrap}
-.bar .lang:hover{color:var(--ink);border-color:var(--ink-3)}
-.bar .acct{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--sp4);font-size:var(--f-ui)}
-.bar .acct a{color:var(--ink-2);text-decoration:none;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
-.bar .acct a:hover{color:var(--ink);text-decoration:underline}
-.bar .acct .who{color:var(--ink-3)}
-.bar .acct form{display:inline;margin:0}
-.bar .linkish{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);cursor:pointer;text-decoration:underline;
-  min-height:44px;min-width:44px}
-@media (max-width:640px){.bar-top .acct{flex:1 0 100%}.bar-top .acct .who{min-width:0;overflow-wrap:anywhere}}
-.shell{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--sp6);padding:var(--sp5)}
-.rail{position:sticky;top:var(--sp4);align-self:start;display:flex;flex-direction:column;gap:2px;font-size:var(--f-ui)}
-.rail a{display:flex;align-items:center;gap:var(--sp2);color:var(--ink-2);text-decoration:none;padding:5px 8px;border-radius:var(--r1)}
-.rail a:hover{background:var(--surface-2);color:var(--ink)}
-.rail .dot{width:8px;height:8px;border-radius:50%;flex:none}
-.rail .sep{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin:var(--sp3) 8px var(--sp1)}
-.main{display:flex;flex-direction:column;gap:var(--sp7);min-width:0}
-@media (max-width:860px){.shell{grid-template-columns:1fr}.rail{position:static;flex-direction:row;flex-wrap:wrap}.rail .sep{display:none}}
-
-
-.sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--sp2) var(--sp4);border-bottom:1px solid var(--line);padding-bottom:var(--sp2);margin-bottom:var(--sp4)}
-.sec-head h2{font-size:var(--f-h2);font-weight:650}
-.sec-head p{flex-basis:100%;margin:0;color:var(--ink-2);font-size:var(--f-ui);max-width:75ch}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp4)}
-.badge{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-cap);font-weight:600;color:var(--ink);background:var(--surface-2);border-radius:999px;padding:2px 9px 2px 3px;white-space:nowrap;line-height:18px}
-.badge i{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font-style:normal;font-size:10px;font-weight:700;color:#fff}
-.badge.warn i,.badge.inv i{color:#12161c}
-.verdict{display:flex;flex-direction:column;gap:var(--sp4)}
-.verdict h1{font-size:var(--f-h1);font-weight:650;margin:var(--sp2) 0}
-.verdict p{margin:0;color:var(--ink-2);max-width:62ch}
-.figs{display:flex;flex-wrap:wrap;gap:var(--sp4) var(--sp6);border-top:1px solid var(--line);padding-top:var(--sp4)}
-.fig .v{font-size:var(--f-fig);font-weight:600;line-height:1.1}
-.fig .l{font-size:var(--f-cap);color:var(--ink-3);max-width:14ch}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp3)}
-.tile .l{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
-.tile .v{font-size:var(--f-fig);font-weight:600;line-height:1.2;margin:var(--sp1) 0}
-.tile .d{font-size:var(--f-ui);color:var(--ink-2)}
-.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r2);background:var(--surface);overflow:hidden}
-.row{display:grid;grid-template-columns:28px minmax(0,1.1fr) 120px minmax(0,1.6fr);gap:var(--sp3);padding:var(--sp3) var(--sp4);border-top:1px solid var(--line);align-items:start;font-size:var(--f-ui)}
-.row:first-child{border-top:0}
-.row .n{color:var(--ink-3);font-variant-numeric:tabular-nums;padding-top:1px}
-.row .t{font-weight:600}
-.row .r{color:var(--ink-2)}
-.row .do{color:var(--ink-3);font-size:var(--f-cap);margin-top:2px}
-.row[data-step='4'] .r + .do{color:var(--ink);font-weight:600}
-.row.check{grid-template-columns:minmax(0,1.3fr) 120px minmax(0,1.2fr) minmax(0,1.2fr)}
-@media (max-width:700px){.row,.row.check{grid-template-columns:1fr}}
-.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:var(--sp4)}
-.chart h3{font-size:var(--f-ui);font-weight:650}
-.chart .cap{font-size:var(--f-cap);color:var(--ink-3);margin:2px 0 var(--sp3)}
-.chart svg{width:100%;height:auto;display:block;overflow:visible}
-.chart svg text{fill:var(--ink-3);font-size:10px;font-family:var(--sans)}
-.chart svg .lbl{fill:var(--ink-2);font-size:11px}
-.chart .domain{stroke:var(--line)}
-.chart .tick line{stroke:var(--line)}
-.chart .grid line{stroke:var(--line)}
-.chart .grid .domain{display:none}
-.chart .foot{display:flex;justify-content:flex-end;margin-top:var(--sp2)}
-.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:0;font-size:var(--f-cap)}
-table.data{width:100%;border-collapse:collapse;font-size:var(--f-ui);font-variant-numeric:tabular-nums}
-table.data th{text-align:left;font-weight:600;color:var(--ink-3);font-size:var(--f-cap);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line)}
-table.data td{padding:6px 8px;border-bottom:1px solid var(--line)}
-table.data td.r,table.data th.r{text-align:right}
-.scroll{overflow-x:auto}
-.filters{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp3);align-items:center;margin-bottom:var(--sp3);font-size:var(--f-ui)}
-.filters select,.filters input[type=search]{padding:5px 8px;border:1px solid var(--line);border-radius:var(--r1);background:var(--surface);color:var(--ink);font-size:var(--f-ui)}
-.filters label{display:inline-flex;gap:6px;align-items:center;color:var(--ink-2)}
-.filters .count{color:var(--ink-3);margin-left:auto;font-size:var(--f-cap)}
-.convs .row{grid-template-columns:24px minmax(0,1.2fr) minmax(0,1fr) 110px minmax(0,1.3fr) minmax(0,1.2fr);cursor:pointer;align-items:center}
-.convs .row:hover{background:var(--surface-2)}
-.convs .row.open{background:var(--accent-wash)}
-.convs .hdr{cursor:default;font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
-.convs .hdr:hover{background:transparent}
-@media (max-width:760px){.convs .row{grid-template-columns:24px 1fr}}
-.steps-v{list-style:none;margin:var(--sp3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp3)}
-.steps-v li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--sp2)}
-.steps-v .k{color:var(--ink-3);font-variant-numeric:tabular-nums;font-size:var(--f-ui)}
-.steps-v .user{font-size:var(--f-cap);color:var(--ink-2);margin-bottom:2px}
-.steps-v .call{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:var(--f-ui)}
-.steps-v .res{font-size:var(--f-cap);color:var(--ink-2);margin-top:2px;word-break:break-word}
-.steps-v .flag{font-size:var(--f-cap);color:var(--ink);margin-top:2px}
-.cmp{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--sp4);font-size:var(--f-ui)}
-.cmp .h{font-weight:650;padding:var(--sp2) 0;border-bottom:1px solid var(--line)}
-.cmp .c{padding:var(--sp2) 0;border-bottom:1px solid var(--line);min-width:0;word-break:break-word}
-.cmp .c.part{background:var(--accent-wash);box-shadow:inset 3px 0 0 var(--accent);padding-left:var(--sp2)}
-.btns{display:flex;flex-wrap:wrap;gap:var(--sp2);margin-top:var(--sp3)}
-.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r1);padding:5px 12px;cursor:pointer;font-size:var(--f-ui)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.empty{border:1px dashed var(--line);border-radius:var(--r2);padding:var(--sp4);color:var(--ink-2);font-size:var(--f-ui);background:var(--surface)}
-.empty b{color:var(--ink)}
-details.appx{border:1px solid var(--line);border-radius:var(--r2);background:var(--surface)}
-details.appx>summary{cursor:pointer;padding:var(--sp3) var(--sp4);font-weight:650;font-size:var(--f-ui);list-style-position:inside}
-details.appx>div{padding:0 var(--sp4) var(--sp4)}
-#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--ink);color:var(--bg);font-size:var(--f-cap);padding:6px 9px;border-radius:var(--r1);z-index:9;max-width:320px}
-#tip .k{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:6px}
-#tip .sub{opacity:.75}
-.rule{font-size:var(--f-ui);color:var(--ink-2);max-width:75ch;margin:var(--sp2) 0 var(--sp3)}
-
-.badge.good i,.dot.good{background:var(--good)}.badge.crit i,.dot.crit{background:var(--crit)}
-.badge.warn i,.dot.warn{background:var(--warn)}.badge.inv i,.dot.inv{background:var(--serious)}.badge.none i,.dot.none{background:var(--none)}
-.dot{display:inline-block}
-.verdict .def{font-size:var(--f-cap);color:var(--ink-3);margin:0}
-.charts{margin-top:var(--sp4)}
-details.twin{margin-top:var(--sp2)}
-details.twin>summary{cursor:pointer;color:var(--accent);font-size:var(--f-cap)}
-.row.stage{grid-template-columns:minmax(0,1fr) auto}
-.convs-host .more{margin-top:var(--sp3)}
-@media (max-width:640px){.shell{padding:var(--sp4) 16px}.bar{padding:var(--sp3) 16px}}
-@media print{.rail,.filters,#tip{display:none}.shell{grid-template-columns:1fr}details.appx,details.twin{display:block}}
-.dim{color:var(--ink-2)}
-.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:var(--f-cap)}
-.steps-v .args{color:var(--ink-2)}
-.chart svg .mono{font-family:var(--mono)}
-.bar .back{margin-left:auto;font-size:var(--f-ui);color:var(--accent);text-decoration:none;font-weight:600;
-  display:inline-flex;align-items:center;min-height:44px}
-.bar .back:hover{text-decoration:underline}
-form.limits .btns{margin-top:var(--sp3)}
-input.lim,select.lim{width:7em;min-height:44px;text-align:right;font:inherit;font-variant-numeric:tabular-nums;padding:4px 6px;border:1px solid var(--line);border-radius:var(--r1);background:var(--surface);color:var(--ink)}
-a.btn{text-decoration:none;display:inline-block}
-.notice{background:var(--accent-wash);border-radius:var(--r1);padding:var(--sp2) var(--sp3);font-size:var(--f-ui);margin:0 0 var(--sp3)}
-
-.fc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:var(--sp4)}
-.card.fc{display:flex;flex-direction:column;gap:var(--sp2)}
-.fc-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--sp2)}
-.fc-top h3{font-size:var(--f-ui);font-weight:650;color:var(--ink-2)}
-.fc-h{font-size:var(--f-h2);font-weight:650;margin:0}
-.card.fc p{margin:0;color:var(--ink-2);font-size:var(--f-ui)}
-.card.fc p.fc-h{color:var(--ink)}
-.fc-based{border-top:1px solid var(--line);padding-top:var(--sp2);font-size:var(--f-cap);color:var(--ink-2)}
-.fc-based ul{margin:var(--sp1) 0 0;padding-left:1.1em}
-.fc-based .lbl,.fc-change .lbl{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
-.fc-change{font-size:var(--f-ui);color:var(--ink-2)}
-
-.card.fc p.fc-risk{border-left:3px solid var(--warn);padding-left:var(--sp2)}
-
-details.src{margin-top:var(--sp2);font-size:var(--f-cap);color:var(--ink-3)}
-details.src>summary{cursor:pointer;color:var(--ink-3);list-style-position:inside}
-details.src>summary:hover{color:var(--accent)}
-details.src ul{margin:var(--sp1) 0 0;padding-left:1.1em;color:var(--ink-2)}
-footer.src-file{font-size:var(--f-cap);color:var(--ink-3);border-top:1px solid var(--line);padding-top:var(--sp3)}
-
-.fc-if{background:var(--surface-2);border-radius:var(--r1);padding:var(--sp2) var(--sp3);font-size:var(--f-ui);color:var(--ink-2)}
-.fc-if ul{margin:var(--sp1) 0 0;padding-left:1.1em}
-.fc-if .lbl{font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
-
-.verdict p.caveat{color:var(--ink);background:var(--surface-2);border-left:3px solid var(--warn);padding:var(--sp2) var(--sp3);border-radius:var(--r1);font-size:var(--f-ui);margin-top:var(--sp2)}
-.fc-if li{margin-bottom:var(--sp1)}
-form.fc-ask{display:flex;flex-wrap:wrap;gap:var(--sp3) var(--sp5);align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp3) var(--sp4);margin-bottom:var(--sp4)}
-form.fc-ask .lbl{flex-basis:100%;font-size:var(--f-cap);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
-form.fc-ask fieldset{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp3);font-size:var(--f-ui)}
-form.fc-ask legend{font-weight:600;margin-bottom:var(--sp1);color:var(--ink)}
-.list + .note{margin:var(--sp3) 0 0;color:var(--ink-2);font-size:var(--f-ui);max-width:75ch}
-.list + .note p{margin:0 0 var(--sp2)}
-.list + .note ol{margin:0 0 var(--sp2);padding-left:1.4em}
-.list + .note strong{color:var(--ink)}
-
-.ex-banner{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:var(--r2);padding:var(--sp4) var(--sp5);max-width:75ch;font-size:var(--f-body)}
-.ex-banner p{margin:0 0 var(--sp2)}
-.ex-banner p:last-child{margin:0}
-.ex-banner .ex-h{font-size:var(--f-h2)}
-.main>.ex-banner + section{margin-top:calc(var(--sp4) - var(--sp7))}
-.bar .meta .ex-name{color:var(--ink);font-weight:600}
-
-
-
-body.site{
-  --bg:#fbfbfa; --surface:#ffffff; --surface-2:#f4f4f2; --line:#e6e6e3;
-  --ink:#0a0a0b; --ink-2:#45454d; --ink-3:#66666f;
-  --accent:#4338ca; --accent-wash:rgba(67,56,202,.07);
-  --cta:#0a0a0b; --on-cta:#ffffff;
-  --wash-1:rgba(99,102,241,.16); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.10);
-  --sans:"Inter","InterVariable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
-  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
-  --r-card:16px; --r-pill:999px;
-  --ease:cubic-bezier(.2,.7,.2,1);
-  --gap-band:clamp(64px,8vw,112px);
-  --t-xs:12px; --t-s:14px; --t-m:16px; --t-l:18px; --t-xl:24px; --t-h2:clamp(30px,4.2vw,48px); --t-h1:clamp(40px,6vw,72px)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.site{
-  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c;
-  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
-  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
-  --cta:#f5f5f6; --on-cta:#09090b;
-  --wash-1:rgba(99,102,241,.22); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14)}}
-:root[data-theme="dark"] body.site{
-  --bg:#09090b; --surface:#111114; --surface-2:#17171b; --line:#26262c;
-  --ink:#f5f5f6; --ink-2:#b4b4bd; --ink-3:#9a9aa5;
-  --accent:#a5b4fc; --accent-wash:rgba(165,180,252,.10);
-  --cta:#f5f5f6; --on-cta:#09090b;
-  --wash-1:rgba(99,102,241,.22); --wash-2:rgba(14,165,233,.12); --wash-3:rgba(168,85,247,.14)}
-
-body.site{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t-m);line-height:1.55;
+html{scroll-padding-top:84px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t-m);line-height:1.625;
   -webkit-font-smoothing:antialiased;overflow-x:clip}
-body.site a{color:inherit}
-body.site a.skip{color:var(--on-cta)}
-body.site :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+a{color:inherit}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.skip{position:absolute;left:var(--sp4);top:-60px;z-index:10;background:var(--cta);color:var(--on-cta);padding:10px 14px;border-radius:var(--r-s)}
+.skip:focus{top:var(--sp2)}
+.wrap{padding-inline:var(--gutter)}
+.band{padding-block:var(--band)}
+.eyebrow{font-size:var(--t-xs);font-weight:600;letter-spacing:.02em;color:var(--accent);margin-bottom:var(--sp3)}
+.h2{font-size:var(--t-h2);line-height:1.1;letter-spacing:-.025em;font-weight:700;max-width:22ch}
+html[lang^="zh"] .h2{max-width:16em}
+html[lang^="zh"] .hero h1{max-width:12em}
+.lede{font-size:var(--t-lede);line-height:1.6;color:var(--ink-2);max-width:60ch;margin-top:var(--sp4)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--sp4) var(--sp6);margin-bottom:var(--sp7)}
+.sec-head>div{min-width:0}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;line-height:20px;letter-spacing:.01em;
+  padding:0 9px;border-radius:var(--r-pill);white-space:nowrap}
+.chip svg{width:12px;height:12px;flex:none}
+.chip.today{color:var(--ok);background:var(--ok-wash)}
+.chip.soon{color:var(--soon);background:var(--soon-wash);border:1px dashed var(--line-strong)}
+.chip.part{color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:var(--r-pill);
+  font-weight:600;font-size:15px;text-decoration:none;cursor:pointer;border:1px solid transparent;
+  transition:background-color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
+.btn.primary{background:var(--cta);color:var(--on-cta)}
+.btn.primary:hover{background:color-mix(in srgb,var(--cta) 84%,var(--mark))}
+.btn.ghost{border-color:var(--line-strong);color:var(--ink);background:transparent}
+.btn.ghost:hover{border-color:var(--ink-3);background:var(--surface-2)}
+.btn svg{width:16px;height:16px}
+.more-link{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--accent);min-height:44px;text-decoration:none}
+.more-link:hover{text-decoration:underline}
+.more-link svg{width:16px;height:16px}
+
+.site-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:var(--sp2) var(--sp5);min-height:64px;
+  padding-inline:var(--gutter);background:color-mix(in srgb,var(--bg) 80%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);
+  border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.site-bar .home{color:var(--ink-3);text-decoration:none;font-size:var(--t-s);min-height:44px;display:inline-flex;align-items:center}
+.site-bar .home:hover{color:var(--ink)}
+.site-bar .sep{color:var(--ink-3)}
+.brand{display:inline-flex;align-items:center;gap:8px;font-weight:700;letter-spacing:-.01em;text-decoration:none;min-height:44px;white-space:nowrap}
+.brand svg{width:24px;height:24px;flex:none}
+.site-bar nav{display:flex;gap:var(--sp1);margin-left:auto;font-size:var(--t-s)}
+.site-bar nav a{color:var(--ink-2);text-decoration:none;padding:0 10px;min-height:44px;display:inline-flex;align-items:center;border-radius:8px}
+.site-bar nav a:hover{color:var(--ink);background:var(--surface-2)}
+.site-bar .lang{border:1px solid var(--line);border-radius:var(--r-pill);padding:0 14px;min-width:44px;justify-content:center}
+.site-bar .btn{min-height:44px;padding:0 16px;font-size:var(--t-s)}
+@media (max-width:1000px){.site-bar nav .opt{display:none}}
+@media (max-width:520px){.site-bar .home,.site-bar .sep,.site-bar>.btn{display:none}}
+
+.hero{position:relative;isolation:isolate;overflow:hidden;padding-block:clamp(56px,10vw,136px) clamp(48px,8vw,104px)}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(60% 70% at 85% 10%,var(--wash-1),transparent 70%),
+             radial-gradient(45% 55% at 100% 70%,var(--wash-2),transparent 70%),
+             radial-gradient(40% 50% at 55% 0%,var(--wash-3),transparent 70%)}
+.hero .sky{position:absolute;inset:0;width:100%;height:100%;z-index:-1;display:block;opacity:0;transition:opacity .9s var(--ease);pointer-events:none}
+.hero .sky.on{opacity:1}
+@media (prefers-reduced-motion: reduce){.hero .sky{display:none}}
+.hero h1{font-size:var(--t-h1);line-height:1.02;letter-spacing:-.035em;font-weight:750;max-width:16ch}
+.hero .lede{max-width:52ch;margin-top:var(--sp5)}
+.hero .cta{display:flex;flex-wrap:wrap;gap:var(--sp3);margin-top:var(--sp6)}
+.hero .note{margin-top:var(--sp4);font-size:var(--t-s);color:var(--ink-2);max-width:60ch}
+
+.strip{border-block:1px solid var(--line);padding-block:var(--sp6);background:var(--surface)}
+.strip-in{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp4) var(--sp6)}
+.strip .lbl{font-size:var(--t-xs);font-weight:600;letter-spacing:.02em;color:var(--ink-3);flex:none}
+.strip ul{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp5)}
+.strip li{font-weight:600;color:var(--ink-2);font-size:15px;letter-spacing:-.005em}
+
+.window{border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.02),0 24px 48px -24px color-mix(in srgb,var(--mark) 28%,transparent)}
+.win-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp3);padding:var(--sp3) var(--sp4);border-bottom:1px solid var(--line);
+  font-size:var(--t-s);color:var(--ink-2);background:var(--surface-2)}
+.win-bar svg{width:18px;height:18px;flex:none}
+.win-bar .where{font-weight:600;color:var(--ink)}
+.win-bar .ex{margin-left:auto}
+.win-body{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:480px}
+.rail{border-right:1px solid var(--line);padding:var(--sp4) var(--sp3);display:flex;flex-direction:column;gap:2px;font-size:var(--t-s)}
+.rail .grp{font-size:12px;font-weight:600;color:var(--ink-3);letter-spacing:.02em;margin:var(--sp4) var(--sp2) var(--sp1)}
+.rail .grp:first-child{margin-top:0}
+.rail li{display:flex;align-items:center;justify-content:space-between;gap:var(--sp2);padding:7px var(--sp2);border-radius:8px;color:var(--ink-2);white-space:nowrap}
+.rail li.on{background:var(--accent-wash);color:var(--ink);font-weight:600}
+.rail li .chip{font-size:11px;line-height:18px;padding:0 7px}
+.rail .who{margin-top:auto;padding:var(--sp3) var(--sp2) 0;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);white-space:normal}
+.panels{padding:var(--sp5);min-width:0}
+.panel + .panel{margin-top:var(--sp6);padding-top:var(--sp6);border-top:1px solid var(--line)}
+html.js .panel + .panel{margin-top:0;padding-top:0;border-top:0}
+html.js .panel[hidden]{display:none}
+html.js .panel.in{animation:fade var(--dur) var(--ease)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.panel-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp2) var(--sp3);margin-bottom:var(--sp4)}
+.panel-h .l{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp3)}
+.panel-h h3{font-size:var(--t-h3);letter-spacing:-.015em}
+.panel-h .sub{font-size:12px;color:var(--ink-3)}
+
+.counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp3)}
+.counter{border:1px solid var(--line);border-radius:var(--r-s);padding:var(--sp3) var(--sp4);display:flex;flex-direction:column;gap:2px;min-width:0}
+.counter .k{font-size:12px;font-weight:600;color:var(--ink-3);letter-spacing:.01em}
+.counter .v{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.counter .s{font-size:12px;color:var(--ink-2)}
+.sig{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:var(--sp3);margin-top:var(--sp3)}
+.feed{border:1px solid var(--line);border-radius:var(--r-s);overflow:hidden}
+.feed-h{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2);padding:var(--sp2) var(--sp3);font-size:12px;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line);background:var(--surface-2)}
+.feed li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--sp2) var(--sp3);align-items:center;padding:var(--sp2) var(--sp3);font-size:13px;border-bottom:1px solid var(--line)}
+.feed li:last-child{border-bottom:0}
+.feed .id{font-family:var(--mono);font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+.feed .by{font-size:12px;color:var(--ink-3)}
+.res{font-size:12px;font-weight:600;padding:0 8px;border-radius:var(--r-pill);line-height:20px;white-space:nowrap}
+.res.ok{color:var(--ok);background:var(--ok-wash)}
+.res.no{color:var(--bad);background:var(--bad-wash)}
+.snip{border-radius:var(--r-s);background:var(--code-bg);color:var(--code-ink);overflow:hidden;display:flex;flex-direction:column}
+.snip-h{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2);padding:var(--sp2) var(--sp3);font:600 12px/20px var(--sans);
+  color:var(--code-dim);border-bottom:1px solid rgba(255,255,255,.08)}
+.snip-h .t{color:var(--code-ink)}
+.snip-h .chip.today{color:#86efac;background:rgba(74,222,128,.12)}
+.snip-h .chip.soon{color:#c4c4cc;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)}
+.snip pre{margin:0;padding:var(--sp3);font:12.5px/1.7 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.snip .c{color:var(--code-dim)}
+.snip .k{color:var(--code-key)}
+.snip + .snip{margin-top:var(--sp3)}
+
+.rows{display:grid;gap:var(--sp3)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sp2) var(--sp4);align-items:center;padding:var(--sp4);
+  border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface)}
+.row .q{font-weight:600}
+.row .a{color:var(--ink-2);font-size:var(--t-s)}
+.row .fig{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.meter{grid-column:1/-1;display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.meter i{height:8px;border-radius:2px;background:var(--mark)}
+.meter i.off{background:transparent;border:1.5px dashed var(--ink-3)}
+.seg{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.seg span{font-size:13px;padding:4px 10px;border-radius:var(--r-pill);border:1px solid var(--line);color:var(--ink-2)}
+.seg span.on{border-color:var(--accent);color:var(--ink);background:var(--accent-wash);font-weight:600}
+
+.files{display:grid;gap:var(--sp3)}
+.file{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:var(--sp3);align-items:start;padding:var(--sp4);
+  border:1.5px dashed var(--line-strong);border-radius:var(--r-s)}
+.file .ic{width:36px;height:36px;border-radius:9px;background:var(--accent-wash);color:var(--accent);display:grid;place-items:center}
+.file .ic svg{width:18px;height:18px}
+.file .n{font:600 14px/1.4 var(--mono)}
+.file .d{font-size:var(--t-s);color:var(--ink-2);margin-top:2px}
+.submit{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp3);margin-top:var(--sp4);padding:var(--sp3) var(--sp4);
+  border-radius:var(--r-s);background:var(--surface-2);font-size:var(--t-s);color:var(--ink-2)}
+.cap{font-size:13px;color:var(--ink-3);margin-top:var(--sp3)}
+.submit svg{width:18px;height:18px;color:var(--accent);flex:none}
+
+.cmp{display:grid;gap:var(--sp3)}
+.cmp .lane{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:var(--sp3);align-items:center;font-size:var(--t-s);color:var(--ink-2)}
+.cmp .bar{height:28px;border:1.5px dashed var(--line-strong);border-radius:6px}
+.cmp-note{margin-top:var(--sp4);color:var(--ink-2);font-size:var(--t-s);max-width:60ch}
+
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp3);margin-top:var(--sp5)}
+.step{appearance:none;font:inherit;text-align:left;color:inherit;background:transparent;border:0;border-top:2px solid var(--line);
+  padding:var(--sp4) var(--sp1) var(--sp2);cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:44px;
+  transition:border-color var(--dur) var(--ease)}
+.step .n{font:600 12px/1 var(--mono);color:var(--ink-3)}
+.step .t{font-weight:650;font-size:17px;letter-spacing:-.01em}
+.step .d{font-size:var(--t-s);color:var(--ink-2);line-height:1.5}
+.step .chip{align-self:flex-start;margin-top:2px}
+.step[aria-selected="true"]{border-top-color:var(--accent)}
+.step[aria-selected="true"] .n{color:var(--accent)}
+.step:hover{border-top-color:var(--ink-3)}
+.step[aria-selected="true"]:hover{border-top-color:var(--accent)}
 
 
-.site-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp3) var(--sp5);min-height:60px;
-  padding:var(--sp2) max(16px,calc((100% - 1200px)/2));position:sticky;top:env(safe-area-inset-top,0px);z-index:3;
-  background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(14px);
-  backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
-.site-bar .brand{font-weight:700;font-size:var(--t-m);letter-spacing:-.01em;color:var(--ink);text-decoration:none;
-  display:inline-flex;align-items:center;gap:8px;min-height:44px}
-.site-bar .brand .mark{width:22px;height:22px;flex:none;display:block}
-.site-bar nav{display:flex;flex-wrap:wrap;gap:var(--sp1) var(--sp2);font-size:var(--t-s);margin-left:auto}
-.site-bar nav a,.site-bar .lang{color:var(--ink-2);text-decoration:none;transition:color .15s var(--ease),background .15s var(--ease)}
-.site-bar nav a{padding:10px 10px;border-radius:8px;min-height:44px;display:inline-flex;align-items:center}
-.site-bar nav a:hover{color:var(--ink);background:var(--accent-wash)}
-.site-bar .lang{font-size:var(--t-s);border:1px solid var(--line);border-radius:var(--r-pill);padding:0 14px;min-height:44px;
-  display:inline-flex;align-items:center}
-.site-bar .lang:hover{color:var(--ink);border-color:var(--ink-3)}
+.collect{background:var(--surface);border-block:1px solid var(--line)}
+.callout{display:flex;gap:var(--sp3);align-items:flex-start;padding:var(--sp4) var(--sp5);border-radius:var(--r-s);background:var(--warn-wash);
+  border:1px solid var(--warn-line);color:var(--ink);margin-bottom:var(--sp5);max-width:820px}
+.callout svg{width:20px;height:20px;color:var(--warn);flex:none;margin-top:3px}
+.items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp3);counter-reset:none}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp2) var(--sp3);align-content:start;padding:var(--sp4);
+  border:1px solid var(--line);border-radius:var(--r-s);background:var(--bg)}
+.item .no{font:600 13px/1.6 var(--mono);color:var(--accent)}
+.item p{font-size:15px;line-height:1.5}
+.item .chip{grid-column:2;justify-self:start}
+.item.often{border-color:var(--warn-line)}
+.chip.miss{color:var(--warn);background:var(--warn-wash)}
+.how-much-h{font-size:var(--t-h3);letter-spacing:-.015em;margin:var(--sp7) 0 var(--sp4)}
+.much{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4)}
+.much li{border-top:2px solid var(--accent);padding-top:var(--sp4);display:flex;flex-direction:column;gap:2px}
+.much .big{font-size:clamp(32px,4vw,44px);font-weight:750;letter-spacing:-.03em;line-height:1.1}
+.much .unit{font-weight:600;color:var(--ink)}
+.much p{color:var(--ink-2);font-size:15px;margin-top:var(--sp2)}
 
+.cards3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp4)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp5);display:flex;flex-direction:column;gap:var(--sp3)}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2)}
+.card .ic{width:40px;height:40px;border-radius:12px;background:var(--accent-wash);display:grid;place-items:center;color:var(--accent)}
+.card .ic svg{width:20px;height:20px}
+.card h3{font-size:var(--t-h3);letter-spacing:-.015em}
+.card p{color:var(--ink-2)}
+.card.lead{background:linear-gradient(160deg,var(--accent-wash),transparent 60%),var(--surface)}
+.rule{border-radius:var(--r-s);background:var(--code-bg);color:var(--code-ink);font:12.5px/1.7 var(--mono);padding:var(--sp3);white-space:pre-wrap;overflow-wrap:anywhere;margin:auto 0 0}
+.rule .c{color:var(--code-dim)}.rule .k{color:var(--code-key)}
 
-.site-main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:0 var(--gap-band);
-  display:flex;flex-direction:column;gap:var(--gap-band)}
-.band{scroll-margin-top:84px}
-.eyebrow{font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
-  margin:0 0 var(--sp4);display:inline-flex;align-items:center;gap:10px}
-.eyebrow::before{content:"";width:6px;height:6px;border-radius:2px;background:currentColor;flex:none}
-.band h2{font-weight:650;font-size:var(--t-h2);line-height:1.08;letter-spacing:-.03em;margin:0;max-width:24ch;text-wrap:balance}
-.band .sub{color:var(--ink-2);margin:var(--sp4) 0 0;max-width:62ch;font-size:var(--t-l);line-height:1.6}
-.fmt-h{font-family:var(--mono);font-size:var(--t-xs);font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
-  margin:var(--sp6) 0 var(--sp3)}
+.proof{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--sp6);align-items:start}
+.quote{border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp6);background:var(--surface);margin:0}
+.quote blockquote{margin:0;font-size:clamp(20px,2.2vw,26px);line-height:1.4;letter-spacing:-.01em;font-weight:600}
+.quote figcaption{margin-top:var(--sp4);font-size:var(--t-s);color:var(--ink-3)}
+.src{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp2);margin-top:var(--sp5)}
+.src li{border:1px solid var(--line);border-radius:var(--r-s);padding:var(--sp2) var(--sp3);background:var(--surface);display:flex;flex-direction:column}
+.src .who{font-weight:600;font-size:15px}
+.src .id{font:12.5px/1.5 var(--mono);color:var(--ink-3)}
 
+.trust{background:var(--band-bg);color:var(--band-ink)}
+.trust .eyebrow{color:var(--band-accent)}
+.trust .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--band-line);border-radius:var(--r-pill);padding:6px 14px;font-size:var(--t-s);color:var(--band-ink-2)}
+.trust .badge svg{width:16px;height:16px;color:var(--band-accent)}
+.trust-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp5)}
+.trust-grid li{border-top:1px solid var(--band-line);padding-top:var(--sp4);display:flex;flex-direction:column;gap:var(--sp2)}
+.trust-grid svg{width:22px;height:22px;color:var(--band-accent)}
+.trust-grid h3{font-size:17px;letter-spacing:-.01em}
+.trust-grid p{color:var(--band-ink-2);font-size:15px}
 
-.hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
-  grid-template-areas:"head pv" "act pv";grid-template-rows:auto 1fr;align-items:start;
-  column-gap:clamp(32px,5vw,72px);row-gap:var(--sp6);padding:clamp(24px,4vw,48px) 0 var(--sp4)}
-.hero::before{content:"";position:absolute;inset:-60px calc(50% - 50vw) -40px;z-index:-1;pointer-events:none;
-  background:
-    radial-gradient(42% 60% at 78% 30%,var(--wash-1),transparent 70%),
-    radial-gradient(36% 50% at 92% 72%,var(--wash-2),transparent 70%),
-    radial-gradient(40% 55% at 10% 0%,var(--wash-3),transparent 70%)}
-.hero-head{grid-area:head}.hero .pv{grid-area:pv}.hero-act{grid-area:act}
-.hero .eyebrow{margin-bottom:var(--sp4)}
-.hero h1{font-weight:650;font-size:var(--t-h1);line-height:1.04;letter-spacing:-.04em;margin:0;max-width:15ch;
-  color:var(--ink);text-wrap:balance}
-.hero .cta{justify-content:flex-start}
-.hero .diff{margin:var(--sp5) 0 0;max-width:40ch;font-weight:500;font-size:var(--t-l);line-height:1.5;color:var(--ink-2);
-  padding-left:var(--sp4);border-left:3px solid var(--accent)}
-.hero .cta-note{font-size:var(--t-xs);line-height:1.5}
-.site-bar .bar-act{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:var(--r-pill);
-  background:var(--cta);border-color:var(--cta);color:var(--on-cta);font-weight:600;font-size:var(--t-s);text-decoration:none}
-.skip{position:absolute;left:16px;top:-60px;z-index:5;background:var(--cta);color:var(--on-cta);padding:10px 16px;border-radius:8px;text-decoration:none}
-.skip:focus{top:12px}
-.hero .drop,.hero .local,.hero .job{max-width:560px}
-.how .try{margin-top:var(--sp5)}
+.who-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--sp6);align-items:start}
+.who-card{border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp5);background:var(--surface);display:grid;gap:var(--sp3)}
+.who-card p{color:var(--ink-2)}
+.who-card b{color:var(--ink)}
 
-.hero>*{min-width:0}
+.notes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp4)}
+.note-card{display:flex;flex-direction:column;height:100%;border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;background:var(--surface);
+  text-decoration:none;transition:border-color var(--dur-fast) var(--ease)}
+.note-card:hover{border-color:var(--ink-3)}
+.note-card .art{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;border-bottom:1px solid var(--line)}
+.note-card .art svg{width:60%;height:auto;color:var(--mark)}
+.note-card .body{padding:var(--sp4);display:flex;flex-direction:column;gap:6px}
+.note-card .kind{font-size:12px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
+.note-card h3{font-size:17px;line-height:1.35;letter-spacing:-.01em}
 
-
-.pv{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;scroll-margin-top:84px;
-  box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 50px 100px -50px rgba(30,27,75,.45)}
-.pv-bar{display:flex;flex-wrap:wrap;align-items:center;gap:0 var(--sp3);padding:0 var(--sp2) 0 var(--sp4);
-  background:var(--surface-2);border-bottom:1px solid var(--line)}
-.pv-bar .dots{display:inline-flex;gap:6px}
-.pv-bar .dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
-body.site .pv-tag{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;padding:0 var(--sp2);text-decoration:none}
-.pv-tag span{font-size:var(--t-s);font-weight:600;color:var(--accent);background:var(--accent-wash);
-  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:var(--r-pill);padding:3px 12px;
-  transition:border-color .15s var(--ease)}
-.pv-tag span::after{content:" \2192"}
-.pv-tag:hover span{border-color:var(--accent)}
-.pv-body{display:flex;flex-direction:column;gap:var(--sp5);padding:var(--sp5)}
-ul.pv-qs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp3)}
-.pv-q{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--sp1) var(--sp4);
-  padding-bottom:var(--sp3);border-bottom:1px solid var(--line)}
-.pv-ql{margin:0;font-size:var(--t-s);color:var(--ink-2)}
-.pv-qv{display:inline-flex;align-items:flex-start;gap:var(--sp2);font-size:var(--t-l);font-weight:650;letter-spacing:-.01em;
-  color:var(--ink);text-align:left;word-break:keep-all;overflow-wrap:anywhere;line-height:1.35}
-.pv-qv .dot{width:10px;height:10px;border-radius:50%;flex:none;margin-top:.45em}
-.pv-train .pv-ql{margin-bottom:var(--sp2)}
-.pv-train{padding-top:var(--sp1)}
-.pv-h{margin:0 0 var(--sp5);font-size:var(--t-xl);line-height:1.25;font-weight:650;letter-spacing:-.015em;color:var(--ink);
-  text-wrap:balance}
-.pv-scale{list-style:none;margin:0;padding:22px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  position:relative}
-.pv-scale::before{content:"";position:absolute;left:0;right:0;top:6px;height:4px;border-radius:999px;
-  background:color-mix(in srgb,var(--ink-3) 35%,transparent)}
-.pv-scale li{position:relative;font-size:var(--t-s);line-height:1.3;color:var(--ink-3);text-align:center;padding:0 4px}
-.pv-scale li:first-child{text-align:left;padding-left:0}.pv-scale li:last-child{text-align:right;padding-right:0}
-.pv-scale li.on{color:var(--ink);font-weight:650}
-.pv-scale li.on::before{content:"";position:absolute;top:-22px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;
-  background:var(--cta);box-shadow:0 0 0 4px var(--surface)}
-.pv-scale li.on:first-child::before{left:0;margin-left:0}.pv-scale li.on:last-child::before{left:auto;right:0;margin-left:0}
-
-
-.prob{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:var(--sp6) clamp(32px,5vw,72px);align-items:center;
-  border-top:1px solid var(--line);padding-top:var(--sp7);margin-top:calc(var(--gap-band) * -.4)}
-.prob h2{max-width:none;word-break:keep-all;overflow-wrap:anywhere}
-.prob .sub{margin:var(--sp4) 0 0}
-ul.proof li .card-ico{margin-bottom:var(--sp4)}
-
-
-.ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-.card-ico,.flow-ico{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;flex:none;
-  color:var(--accent);background:var(--accent-wash);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
-.card-ico{margin-bottom:var(--sp4)}
-
-
-.how h2{max-width:none}
-ol.flow{list-style:none;margin:var(--sp6) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4) 64px}
-ol.flow li{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp5)}
-ol.flow li:last-child{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));box-shadow:0 0 0 4px var(--accent-wash)}
-ol.flow .flow-ico{width:52px;height:52px;border-radius:14px}
-ol.flow .flow-ico .ico{width:26px;height:26px}
-ol.flow h3{font-size:var(--t-l);font-weight:650;letter-spacing:-.015em;margin:var(--sp4) 0 var(--sp2)}
-ol.flow p{margin:0;color:var(--ink-2);line-height:1.55}
-.flow-arrow{position:absolute;left:-56px;top:38px;width:48px;height:24px;fill:none;stroke:var(--ink-3);stroke-width:1.75;
-  stroke-linecap:round;stroke-linejoin:round}
-
-
-.pic{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.pic-bar{display:flex;align-items:center;gap:var(--sp2);padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
-.pic-bar .dots{display:inline-flex;gap:5px}
-.pic-bar .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
-.pic-tag{margin-left:auto;font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
-.pic-body{height:150px;padding:var(--sp3) var(--sp4);display:flex;align-items:center;gap:var(--sp4)}
-.pic-svg{display:block;width:100%;height:auto;overflow:visible}
-.pic-svg text{font-family:var(--sans);fill:var(--ink)}
-pre.pic-log{margin:0;font-family:var(--mono);font-size:var(--t-xs);line-height:1.9;color:var(--ink-2);white-space:pre-wrap;
-  overflow-wrap:anywhere;min-width:0}
-pre.pic-log code{font:inherit}pre.pic-log .k{color:var(--accent)}pre.pic-log .v{color:var(--ink)}
-.pic-r .pic-body{gap:var(--sp4)}
-.pic-k{display:flex;flex-direction:column;gap:2px;flex:none}
-.pic-num{font-size:var(--t-xl);font-weight:650;letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
-.pic-lbl{font-size:var(--t-xs);color:var(--ink-2);max-width:9em;line-height:1.35}
-.pic-r .pic-svg{height:100%;width:auto;max-width:100%;flex:1 1 auto;min-width:0}
-.pic-r rect{fill:color-mix(in srgb,var(--ink-3) 32%,transparent)}
-.mk circle{stroke:none}.mk path{fill:none;stroke:var(--surface);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
-.mk.good circle{fill:var(--good)}.mk.crit circle{fill:var(--crit)}.mk.warn circle{fill:var(--warn)}
-.mk.warn circle{stroke:var(--ink-2);stroke-width:.8}.mk.warn .fill{fill:var(--surface);stroke:none}
-.mk.none circle{fill:none;stroke:var(--ink-3);stroke-width:1.1}.mk.none path{stroke:var(--ink-3)}
-.pic-c .pic-body{flex-direction:column;align-items:stretch;justify-content:center;gap:var(--sp1)}
-.pic-c .pic-svg{max-height:118px;min-height:0}
-.pic-c .bar{fill:color-mix(in srgb,var(--accent) 78%,transparent)}
-.pic-c .axis{stroke:var(--ink-3);stroke-width:1}
-.pic-c .val{font-size:var(--t-s);font-weight:650;text-anchor:middle}
-.pic-c .tick{font-size:var(--t-s);fill:var(--ink-2);text-anchor:middle}
-.pic-c .tick.unit{text-anchor:start}
-.pic-m .pic-body{flex-direction:column;align-items:stretch;justify-content:center;gap:var(--sp3)}
-.pic-m .meter{max-width:100%}
-.meter .cell{fill:none;stroke:color-mix(in srgb,var(--ink-3) 70%,transparent);stroke-width:1.2}
-.meter .cell.on{fill:color-mix(in srgb,var(--accent) 78%,transparent);stroke:var(--accent)}
-.pic-m .pic-cap{font-size:var(--t-s);color:var(--ink);font-weight:600;text-align:left}
-.pic-cap{margin:0;font-size:var(--t-xs);color:var(--ink-2);text-align:center}
-ol.flow h3{margin-top:var(--sp4)}
-.flow-arrow{top:100px}
-@media (max-width:480px){ol.flow li{padding:var(--sp4)}}
-
-.fork{margin:0;max-width:400px;width:100%;justify-self:center}
-.fork .fk-start{fill:var(--cta)}
-.fork .fk-start-t{fill:var(--on-cta);font-size:var(--t-s);font-weight:650}
-.fork .fk-line{fill:none;stroke:var(--ink-3);stroke-width:1.75;stroke-linecap:round}
-.fork .fk-node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
-.fork .fk-node text{font-size:var(--t-s);font-weight:650}
-.fork .coin circle{fill:none;stroke:var(--accent);stroke-width:1.5}
-
-.pflow{display:flex;align-items:flex-start;gap:var(--sp2);margin:var(--sp5) 0 0;padding:var(--sp5);width:fit-content;max-width:100%;
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
-.pf-step{display:flex;flex-direction:column;align-items:center;gap:var(--sp2);width:88px;text-align:center;font-size:var(--t-s);
-  font-weight:600;line-height:1.3;color:var(--ink)}
-.pf-ico{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;color:var(--accent);background:var(--accent-wash);
-  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
-.pf-kept{width:auto;min-width:88px;text-wrap:balance}
-.pf-kept .pf-ico{border-style:dashed;border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
-.pf-arrow{width:22px;height:11px;flex:none;margin-top:19px;fill:none;stroke:var(--ink-3);stroke-width:1.75;stroke-linecap:round;
-  stroke-linejoin:round}
-.pf-sep{align-self:stretch;width:1px;flex:none;margin:0 var(--sp3);background:var(--line)}
-@media (max-width:480px){.pflow{padding:var(--sp4) var(--sp3);gap:2px}.pf-step{width:58px;font-size:var(--t-xs)}
-  .pf-ico{width:40px;height:40px;border-radius:12px}.pf-arrow{width:14px;margin-top:15px}.pf-sep{margin:0 var(--sp1)}}
-
-
-details.more{margin-top:var(--sp5);border-top:1px solid var(--line)}
-details.more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:var(--sp2);min-height:52px;
-  font-weight:600;color:var(--accent);width:fit-content;max-width:100%}
-details.more>summary::-webkit-details-marker{display:none}
-details.more>summary::after{content:"+";font-weight:400;font-size:var(--t-xl);line-height:1;transition:transform .2s var(--ease)}
-details.more[open]>summary::after{transform:rotate(45deg)}
-details.more>summary,details.kept>summary{text-decoration:underline 1px transparent;text-underline-offset:4px;
-  transition:text-decoration-color .15s var(--ease)}
-details.more>summary:hover,details.kept>summary:hover{text-decoration-color:currentColor}
-details.more>.sub:first-of-type{margin-top:var(--sp2)}
-
-
-.cta{display:flex;flex-wrap:wrap;gap:var(--sp3);align-items:center}
-
-.cta-note{margin:var(--sp4) 0 0;font-size:var(--t-s);color:var(--ink-3);max-width:56ch}
-body.site .btn:not(.big){font-size:var(--t-s)}
-.btn.big{font-size:var(--t-m);font-weight:600;padding:0 22px;min-height:48px;border-radius:var(--r-pill);text-decoration:none;
-  display:inline-flex;align-items:center;gap:8px;transition:transform .15s var(--ease),background .15s var(--ease),border-color .15s var(--ease)}
-.btn.big.primary{background:var(--cta);border-color:var(--cta);color:var(--on-cta)}
-.btn.big.primary::after{content:"\2192";transition:transform .15s var(--ease)}
-.btn.big.primary:hover::after{transform:translateX(3px)}
-.btn.big.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
-.btn.big.ghost:hover{border-color:var(--ink-3);background:var(--surface)}
-.btn.big:active{transform:translateY(1px)}
-.btn.danger{color:var(--crit)}
-
-
-.drop{border:1.5px dashed color-mix(in srgb,var(--ink-3) 45%,var(--line));border-radius:var(--r-card);background:var(--surface);
-  padding:var(--sp6) var(--sp5);display:flex;flex-direction:column;align-items:center;gap:var(--sp2);text-align:center;cursor:pointer;
-  transition:border-color .15s var(--ease),background .15s var(--ease)}
-.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-wash)}
-.drop-h{font-size:var(--t-l);font-weight:650}
-.drop-types{font-size:var(--t-s);color:var(--ink-3);margin-top:var(--sp1)}
-.drop label.btn{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;padding:0 18px;border-radius:var(--r-pill);
-  background:var(--cta);border-color:var(--cta);color:var(--on-cta);font-weight:600}
-
-.try{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2);margin-top:var(--sp5);font-size:var(--t-s);color:var(--ink-2)}
-.try .btn.ex{min-height:44px;border-radius:var(--r-pill);padding:0 14px}
-.local{display:flex;align-items:center;gap:var(--sp2);font-size:var(--t-s);color:var(--ink-2);margin:var(--sp3) 0 0}
-.local .dot{width:8px;height:8px;border-radius:50%;flex:none}
-ul.priv .ico{color:var(--accent);margin-top:1px}
-details.kept{margin-top:var(--sp2)}
-details.kept>summary{cursor:pointer;display:inline-flex;align-items:center;min-height:44px;font-weight:600;color:var(--accent)}
-details.kept>p{margin:0;font-size:var(--t-s);line-height:1.6}
-.job{margin-top:var(--sp4)}
-.job h3{font-size:var(--t-m);font-weight:650;margin:0}
-.job p{margin:var(--sp1) 0 0;color:var(--ink-2);font-size:var(--t-s)}
-.job .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;
-  animation:spin .8s linear infinite;vertical-align:-2px;margin-right:var(--sp2)}
-.job.err{border-color:var(--crit)}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-
-.src .promise,.next .promise,.rec .promise{margin:var(--sp5) 0 0;font-weight:600;color:var(--ink);max-width:62ch;
-  padding-left:var(--sp4);border-left:3px solid var(--accent)}
-
-
-ul.get,ul.ways{list-style:none;padding:0;margin:var(--sp6) 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4)}
-ul.get li,ul.ways li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp6) var(--sp5);
-  transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
-ul.get li:hover,ul.ways li:hover{border-color:color-mix(in srgb,var(--ink-3) 40%,var(--line));box-shadow:0 20px 40px -30px rgba(30,27,75,.35)}
-ul.get li.lead{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));box-shadow:0 0 0 4px var(--accent-wash)}
-ul.get h3,ul.ways h3{font-size:var(--t-l);font-weight:650;letter-spacing:-.015em;margin:0 0 var(--sp3)}
-ul.get p,ul.ways p{margin:0;color:var(--ink-2);line-height:1.6}
-ul.ways .way-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--sp2);margin-bottom:var(--sp4)}
-ul.ways .way-top .card-ico{margin:0}
-.soon{font-family:var(--mono);font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
-  border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:var(--r-pill);padding:3px 9px;white-space:nowrap}
-.next .note{margin:var(--sp3) 0 0;font-size:var(--t-s);color:var(--ink-3)}
-
-
-ul.chips{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--sp2)}
-ul.chips li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 14px;font-size:var(--t-s);color:var(--ink-2)}
-ul.papers li{font-family:var(--mono);font-size:var(--t-xs)}
-
-
-ul.ten{list-style:none;padding:var(--sp2) var(--sp6);margin:var(--sp6) 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:0 var(--sp7);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
-ul.ten li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:var(--sp2);padding:14px 0;border-bottom:1px solid var(--line);font-size:var(--t-m)}
-ul.ten .k{font-family:var(--mono);color:var(--accent);font-size:var(--t-xs);padding-top:2px}
-ul.much{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:var(--sp3);color:var(--ink-2);max-width:70ch}
-
-
-ul.priv{list-style:none;padding:0;margin:var(--sp5) 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--sp4)}
-ul.priv li{display:flex;align-items:flex-start;gap:var(--sp3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
-  padding:var(--sp5);color:var(--ink-2);line-height:1.55}
-
-
-.faq{margin-top:var(--sp5);border-top:1px solid var(--line);max-width:860px}
-.faq details{border-bottom:1px solid var(--line)}
-.faq summary{cursor:pointer;font-weight:600;font-size:var(--t-l);list-style:none;display:flex;justify-content:space-between;align-items:center;
-  gap:var(--sp4);min-height:64px;padding:var(--sp3) 0}
+.faq{max-width:820px}
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:var(--sp4);
+  min-height:56px;padding-block:10px;font-weight:600;font-size:17px}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"+";color:var(--ink-3);font-weight:400;font-size:var(--t-xl);transition:transform .2s var(--ease)}
+.faq summary::after{content:"+";font:400 22px/1 var(--sans);color:var(--ink-3);transition:transform var(--dur) var(--ease)}
 .faq details[open] summary::after{transform:rotate(45deg)}
-.faq p{margin:0 0 var(--sp5);color:var(--ink-2);max-width:70ch;line-height:1.65}
+.faq details p{color:var(--ink-2);padding-bottom:var(--sp4);max-width:68ch}
 
+.end{border-top:1px solid var(--line);position:relative;isolation:isolate;overflow:hidden}
+.end::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(50% 80% at 90% 100%,var(--wash-1),transparent 70%)}
+.end .cta{display:flex;flex-wrap:wrap;gap:var(--sp3);margin-top:var(--sp5)}
+.end .note{margin-top:var(--sp4);color:var(--ink-2);font-size:var(--t-s)}
+.foot{border-top:1px solid var(--line);padding-block:var(--sp7) var(--sp6);font-size:var(--t-s)}
+.foot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp5)}
+.foot h2{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-3);margin-bottom:var(--sp2)}
+.foot a{color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
+.foot a:hover{color:var(--ink);text-decoration:underline}
+.foot p{color:var(--ink-2)}
+.foot .base{margin-top:var(--sp6);padding-top:var(--sp4);border-top:1px solid var(--line);color:var(--ink-3);display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp3);align-items:center}
+.foot .base svg{width:18px;height:18px}
 
-.end{text-align:center;border-radius:28px;padding:clamp(48px,8vw,96px) var(--sp5);position:relative;isolation:isolate;overflow:hidden;
-  background:var(--cta);color:var(--on-cta);border:0}
-.end::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(50% 80% at 50% 0%,rgba(99,102,241,.45),transparent 70%),radial-gradient(40% 60% at 90% 100%,rgba(14,165,233,.25),transparent 70%)}
-.end h2{margin:0 auto var(--sp6);color:inherit;max-width:20ch}
-.end .cta{justify-content:center}
-.end .btn.big.primary{background:var(--on-cta);border-color:var(--on-cta);color:var(--cta)}
-.end .btn.big.ghost{color:var(--on-cta);border-color:color-mix(in srgb,var(--on-cta) 35%,transparent)}
-.end .cta-note{color:color-mix(in srgb,var(--on-cta) 78%,transparent)}
-.end .cta-note{margin-inline:auto}
-.end :focus-visible{outline-color:var(--on-cta)}
-
-
-.site-foot{border-top:1px solid var(--line);padding-block:var(--sp6);padding-inline:16px;text-align:center;font-size:var(--t-s);color:var(--ink-3)}
-
-
-.site-bar .acct{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp4);font-size:var(--t-s)}
-.site-bar .acct a{color:var(--ink-2);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
-.site-bar .acct a:hover{color:var(--ink)}
-.site-bar .acct .who{color:var(--ink-3)}
-.site-bar .acct form{display:inline;margin:0}
-.linkish{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);cursor:pointer;text-decoration:underline;min-height:44px}
-ul.mine{list-style:none;margin:var(--sp5) 0;padding:0;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
-ul.mine li{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2) var(--sp4);padding:var(--sp4) var(--sp5);border-top:1px solid var(--line)}
-ul.mine li:first-child{border-top:0}
-ul.mine .name{flex:1 1 220px;min-width:0;overflow-wrap:anywhere;color:var(--ink)}
-ul.mine .when{color:var(--ink-3);font-size:var(--t-s)}
-ul.mine form{margin:0}
-ul.mine .btn{min-height:40px;border-radius:var(--r-pill);padding:0 14px;display:inline-flex;align-items:center}
-
-ul.mine .tag.ex{flex:0 0 auto;font-size:var(--t-xs);font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:var(--r1);padding:2px 8px}
-.card.msg{max-width:640px;margin:var(--gap-band) auto 0;border-radius:var(--r-card)}
-.card.msg pre{white-space:pre-wrap;font-size:var(--t-xs);color:var(--ink-2)}
-.card.msg .btn.primary,.band > p > .btn.primary{background:var(--cta);border-color:var(--cta);color:var(--on-cta);border-radius:var(--r-pill);
-  min-height:44px;display:inline-flex;align-items:center;padding:0 18px;font-weight:600}
-
-
-@media (max-width:980px){
-  .hero{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "pv" "act";grid-template-rows:auto;row-gap:var(--sp5);
-    padding-top:var(--sp5)}
-  ul.get,ul.ways,ul.ten{grid-template-columns:1fr}
-  ul.ten{padding:var(--sp2) var(--sp5)}
-  .pv{max-width:620px}
-  ol.flow{grid-template-columns:1fr;gap:48px}
-  .flow-arrow{left:30px;top:-38px;transform:rotate(90deg)}}
-@media (max-width:980px){.prob{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:480px){.pv-body{padding:var(--sp4);gap:var(--sp4)}
-  .pv-h{font-size:var(--t-l);margin-bottom:var(--sp4)}}
-@media (max-width:1040px){.site-bar nav{display:none}.site-bar .lang{margin-left:auto}}
-.site-bar{flex-wrap:nowrap}.site-bar .brand,.site-bar .lang,.site-bar .bar-act{flex:none;white-space:nowrap}
-@media (max-width:480px){.site-bar{gap:var(--sp2)}}
-@media (max-width:400px){.site-bar .bar-act{display:none}}
-
-@media (max-width:640px){.site-bar{flex-wrap:wrap}
-  .site-bar .acct{order:1;flex:1 0 100%;gap:0 var(--sp4)}
-  .site-bar .acct .who{min-width:0;overflow-wrap:anywhere}}
-@media (max-width:480px){.btn.big{width:100%;justify-content:center}.hero h1{letter-spacing:-.035em}}
-
-@media (max-width:480px){.hero{row-gap:var(--sp4);padding-top:var(--sp4)}.hero .eyebrow{margin-bottom:var(--sp3)}
-  .hero .diff{font-size:var(--t-m);line-height:1.45;margin-top:var(--sp4)}
-  .pv-body{gap:var(--sp3)}.pv-q{padding-bottom:var(--sp2)}ul.pv-qs{gap:var(--sp2)}
-  .pv-h{margin-bottom:var(--sp3)}}
+html.js .reveal{opacity:0;transform:translateY(12px);transition:opacity var(--dur-reveal) var(--ease),transform var(--dur-reveal) var(--ease)}
+html.js .reveal.seen{opacity:1;transform:none}
 @media (prefers-reduced-motion: reduce){
-  body.site *,body.site *::before,body.site *::after{transition:none !important;animation:none !important}}
-.site-bar .home{color:var(--ink-2);text-decoration:none;font-size:var(--t-s);min-height:44px;display:inline-flex;align-items:center;flex:none;white-space:nowrap}.site-bar .home:hover{color:var(--ink)}.site-bar .home-sep{color:var(--ink-3);margin:0 -4px;flex:none}.site-foot a{color:var(--ink-2)}@media (max-width:400px){.site-bar .home,.site-bar .home-sep{display:none}}</style>
-</head><body class="site">
-<a class="skip" href="#main">Skip to the content</a>
-<header class="site-bar"><a class="home" href="../">Shuhui Qu</a><span class="home-sep" aria-hidden="true">/</span><a class="brand" href="./"><svg class="mark" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#6366f1"/><path d="M13 44h26M13 53h15" fill="none" stroke="#e0e7ff" stroke-width="5" stroke-linecap="round"/><path d="M11 25h11l7 8 20-21" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Trace Check-up</a><nav aria-label="Sections of this page"><a href="#private">Privacy</a><a href="#faq">Questions</a></nav><a class="lang" href="index.zh.html" hreflang="zh-CN">中文</a></header>
-<main class="site-main" id="main"><section class="hero" id="top"><div class="hero-head"><p class="eyebrow">A neutral check-up for AI-agent logs</p><h1>Check your agent&#x27;s logs before you pay to train it.</h1><p class="diff">Know now which fields to record and how much to collect, so you don&#x27;t collect for months and then find one missing. Compare training with your agent trying again, counted in tries (in money: coming soon).</p></div><figure class="pv" id="fc"><figcaption class="pv-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><a class="pv-tag" href="example-report.html"><span>Example: a made-up log</span></a></figcaption><div class="pv-body"><ul class="pv-qs"><li class="pv-q" data-q="q1" data-status="pass"><span class="pv-ql">What to record</span><span class="pv-qv"><span class="dot good" aria-hidden="true"></span>10 of 11 things recorded</span></li><li class="pv-q" data-q="q2" data-status="fail"><span class="pv-ql">Enough to train?</span><span class="pv-qv"><span class="dot crit" aria-hidden="true"></span>11 conversations worked; can&#x27;t tell below 5,000</span></li></ul><div class="pv-train" data-card="train" data-conf="low"><p class="pv-ql">Train, or try again?</p><p class="pv-h">Can&#x27;t tell yet: training could make it better or worse.</p><ol class="pv-scale" aria-label="What the training card can say"><li>Could help</li><li class="on" aria-current="true">Can&#x27;t tell yet</li><li>Trying again is enough</li></ol></div></div></figure><div class="hero-act"><div class="cta"><a class="btn big primary" href="example-report.html">See an example report</a></div><p class="cta-note">It is open source: the code is published when the first team asks for it. Want to discuss? Email shuhuiq＠stanford.edu</p></div></section><section class="band prob" id="problem"><div><p class="eyebrow">The problem</p><h2>Training costs money. Trying again costs money too.</h2><p class="sub">Pick on a hunch and you may pay for the wrong one.</p></div><figure class="fork"><svg class="pic-svg" viewBox="0 0 300 120" role="img" aria-label="Check your log first, then choose: train, or try again. Both cost money."><g aria-hidden="true"><rect class="fk-start" x="2" y="40" width="136" height="40" rx="12"/><text class="fk-start-t" x="70" y="64.5" text-anchor="middle">Check your log</text><path class="fk-line" d="M138 60h10c13 0 13-36 26-36M148 60c13 0 13 36 26 36"/><g class="fk-node a" transform="translate(176 24)"><rect x="0" y="-17" width="122" height="34" rx="17"/><g transform="translate(20 0)"><g class="coin" aria-hidden="true"><circle r="7"/><circle r="3.5"/></g></g><text x="36" y="5">Train</text></g><g class="fk-node b" transform="translate(176 96)"><rect x="0" y="-17" width="122" height="34" rx="17"/><g transform="translate(20 0)"><g class="coin" aria-hidden="true"><circle r="7"/><circle r="3.5"/></g></g><text x="36" y="5">Try again</text></g></g></svg></figure></section><section class="band how" id="how"><h2 id="how-h">From log to next step</h2><ol class="flow" aria-labelledby="how-h"><li><figure class="pic pic-l"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><pre class="pic-log" role="img" aria-label="Three lines of the made-up example log: the task, the model, and whether it worked and who decided."><code><span class="k">&quot;task_id&quot;:</span> <span class="v">&quot;refund_order&quot;</span>
-<span class="k">&quot;model&quot;:</span> <span class="v">&quot;deepseek-chat&quot;</span>
-<span class="k">&quot;outcome&quot;:</span> <span class="v">{&quot;success&quot;: true, &quot;by&quot;: &quot;check&quot;}</span></code></pre></div></figure><h3>Send your log</h3></li><li><svg class="flow-arrow" viewBox="0 0 48 24" aria-hidden="true" focusable="false"><path d="M2 12h42m-7-7 7 7-7 7"/></svg><figure class="pic pic-r"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><div class="pic-k" aria-hidden="true"><span class="pic-num num">10/11</span><span class="pic-lbl">What to record</span></div><svg class="pic-svg" viewBox="0 0 140 122" role="img" aria-label="10 of 11 things recorded"><g aria-hidden="true"><g transform="translate(0 6)" data-item="conversation" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="58" height="3.2" rx="1.6"/></g><g transform="translate(0 17)" data-item="call" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="95" height="3.2" rx="1.6"/></g><g transform="translate(0 28)" data-item="result" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="68" height="3.2" rx="1.6"/></g><g transform="translate(0 39)" data-item="task" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="105" height="3.2" rx="1.6"/></g><g transform="translate(0 50)" data-item="outcome" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="78" height="3.2" rx="1.6"/></g><g transform="translate(0 61)" data-item="user" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="115" height="3.2" rx="1.6"/></g><g transform="translate(0 72)" data-item="repeats" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="88" height="3.2" rx="1.6"/></g><g transform="translate(0 83)" data-item="tools" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="61" height="3.2" rx="1.6"/></g><g transform="translate(0 94)" data-item="model" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="98" height="3.2" rx="1.6"/></g><g transform="translate(0 105)" data-item="tokens" data-status="recorded"><g class="mk good" transform="translate(5 0)"><circle r="4.6"/><path d="M-2.2 0 -.6 1.6 2.4-1.6"/></g><rect x="15" y="-1.6" width="71" height="3.2" rx="1.6"/></g><g transform="translate(0 116)" data-item="state" data-status="optional"><g class="mk none" transform="translate(5 0)"><circle r="4.6"/><path d="M-2 0h4"/></g><rect x="15" y="-1.6" width="108" height="3.2" rx="1.6"/></g></g></svg></div></figure><h3>Checked in about a minute</h3></li><li><svg class="flow-arrow" viewBox="0 0 48 24" aria-hidden="true" focusable="false"><path d="M2 12h42m-7-7 7 7-7 7"/></svg><figure class="pic pic-m"><figcaption class="pic-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pic-tag">Example</span></figcaption><div class="pic-body"><svg class="pic-svg meter" viewBox="-1 -1 214 16" role="img" aria-label="2 of 12 tasks needed: can&#x27;t tell yet" data-have="2" data-need="12"><g aria-hidden="true"><rect class="cell on" x="0" y="0" width="14" height="14" rx="3"/><rect class="cell on" x="18" y="0" width="14" height="14" rx="3"/><rect class="cell" x="36" y="0" width="14" height="14" rx="3"/><rect class="cell" x="54" y="0" width="14" height="14" rx="3"/><rect class="cell" x="72" y="0" width="14" height="14" rx="3"/><rect class="cell" x="90" y="0" width="14" height="14" rx="3"/><rect class="cell" x="108" y="0" width="14" height="14" rx="3"/><rect class="cell" x="126" y="0" width="14" height="14" rx="3"/><rect class="cell" x="144" y="0" width="14" height="14" rx="3"/><rect class="cell" x="162" y="0" width="14" height="14" rx="3"/><rect class="cell" x="180" y="0" width="14" height="14" rx="3"/><rect class="cell" x="198" y="0" width="14" height="14" rx="3"/></g></svg><p class="pic-cap" aria-hidden="true">2 of 12 tasks needed: can&#x27;t tell yet</p></div></figure><h3>Train, or try again</h3></li></ol><h3 class="fmt-h">Formats it reads</h3><ul class="chips"><li>OpenAI chat</li><li>OpenTelemetry GenAI</li><li>Arize Phoenix</li><li>LangSmith</li><li>Langfuse</li><li>Claude Code</li><li>ShareGPT</li><li>Microsoft ToolTalk</li><li>CSV / Excel</li><li>JSON lines</li></ul></section><section class="band next" id="next"><p class="eyebrow">After the report</p><h2>Three ways forward. The advice is the same, including “don&#x27;t train”.</h2><ul class="ways"><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg></span></div><h3>Train it yourself</h3><p>On any platform you like. The report shows which conversations worked and which had problems. Coming soon: a list of the ones to train on.</p></li><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 17V9m0 0-3 3m3-3 3 3"/><path d="M7.5 18a4.5 4.5 0 0 1-.4-8.98A5.5 5.5 0 0 1 17.6 9.5 4 4 0 0 1 17 18"/></svg></span><span class="soon">Coming soon</span></div><h3>Train on our platform</h3><p>We send the conversations the report picked to the training platform you choose, on your own account. We don&#x27;t sell computing power.</p></li><li><div class="way-top"><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="7" height="12" rx="1.5"/><rect x="14" y="9" width="7" height="9" rx="1.5"/><path d="M3 21h18"/></svg></span><span class="soon">Coming soon</span></div><h3>Compare on our platform</h3><p>Trained it anywhere? Send the new log back. We compare it with your untrained agent trying again at the same cost, on the same tasks. Too few tasks, and we say we can&#x27;t tell.</p></li></ul><details class="more"><summary>Where to train, and what your log is enough for</summary><p class="sub">A log of conversations and tool calls is enough to train by copying the examples that worked. Training by trial and reward also needs a way to score each try: every platform that offers it asks for one.</p><h3 class="fmt-h">Platforms that train open models through an API, checked in October 2026</h3><ul class="chips"><li>Thinking Machines Tinker</li><li>Fireworks Training API</li><li>Together AI</li><li>CoreWeave Serverless RL</li><li>Prime Intellect Lab</li><li>AWS Bedrock</li><li>Google Vertex AI</li></ul><p class="note">This changes fast: OpenAI takes no new fine-tuning jobs from 6 January 2027.</p></details></section><section class="band rec" id="record"><h2>Neutral by design</h2><ul class="get proof"><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7 2.5 13a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg></span><h3>No training platform pays us, so the advice doesn&#x27;t depend on which way you go.</h3></li><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><h3>Every sentence points to its source</h3></li><li><span class="card-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11l2 2 4-4"/></svg></span><h3>We don&#x27;t promise that training will help.</h3></li></ul><details class="more"><summary>How to collect your log so it can answer</summary><p class="sub">The eleven things a useful log records. The report marks each one recorded, partly recorded or missing.</p><p class="promise">Most often missing: what came back from each action, a task name, and whether it worked.</p><ul class="ten"><li><span class="k num">1</span><span>A number or name for each conversation, and the order of its steps</span></li><li><span class="k num">2</span><span>Every action: which tool, and what was sent to it</span></li><li><span class="k num">3</span><span>What came back from each action, exactly as it was, errors and empty answers too</span></li><li><span class="k num">4</span><span>A task name: the same name every time the same kind of job is done</span></li><li><span class="k num">5</span><span>Whether each conversation worked: yes or no, or a score from 0 to 1, and who decided it (an automatic check as it ran, or a person afterwards)</span></li><li><span class="k num">6</span><span>Everything the person said to the agent, the first message and any later ones</span></li><li><span class="k num">7</span><span>The same task tried at least 8 times, each marked worked or failed</span></li><li><span class="k num">8</span><span>The instructions (system prompt) and the list of tools the agent had in each conversation, as they were then, with what each tool needs</span></li><li><span class="k num">9</span><span>Which AI model (and version) ran the conversation</span></li><li><span class="k num">10</span><span>How many tokens each conversation used, input and output</span></li><li><span class="k num">11</span><span>Optional: a copy of the records the agent will work on, taken before it starts</span></li></ul><h3 class="fmt-h">How much</h3><ul class="much"><li>Each task tried 8 times, each marked worked or failed: then you can see how much trying again already fixes.</li><li>About 5,000 conversations that worked, each saying who decided it worked, before training. Below this, published results go both ways: training made some models better and some worse (MUA-RL, arXiv 2508.18669; ToolRL, arXiv 2504.13958). We can&#x27;t tell which way yours would go.</li><li>Many different tasks tell you more than many copies of a few.</li></ul></details><details class="more" id="src"><summary>See the sources</summary><p class="sub">Each sentence rests on a reading from your own log or on a published result, named with its paper. When there isn&#x27;t enough to go on, the report says it can&#x27;t tell.</p><h3 class="fmt-h">Published results the forecast cites</h3><ul class="chips papers"><li>Yue et al. · arXiv 2504.13837</li><li>Tool-N1 · arXiv 2505.00024</li><li>ToolRL · arXiv 2504.13958</li><li>MUA-RL · arXiv 2508.18669</li><li>LOOP · arXiv 2502.01600</li><li>Simia · arXiv 2511.01824</li><li>APIGen-MT · arXiv 2504.03601</li><li>ToolRM · arXiv 2509.11963</li><li>Qwen3 · arXiv 2505.09388</li><li>Yang and Chen · arXiv 2609.22547</li></ul></details></section><section id="private" class="band"><h2>Private by design</h2><ul class="priv"><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg><span>It runs on your computer. Nothing is uploaded to us or to anyone else.</span></li><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 6.1A9 9 0 0 1 12 6c5 0 9 6 9 6a16 16 0 0 1-2.6 3.2M6.6 7.6C4.4 9.1 3 12 3 12s4 6 9 6a8.5 8.5 0 0 0 3.4-.7M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg><span>As soon as the log is read, these are hidden: emails, most card numbers, common kinds of keys, and the first word after “password:”. Phone numbers are hidden only when written in common ways, such as +44 20 7946 0958, (415) 555-0132 or 13812345678 — not every one, so hide the others yourself. Names and addresses are not hidden.</span></li><li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span>It reads only the file you give it, and never changes it.</span></li></ul></section><section id="faq" class="band"><h2>Questions</h2><div class="faq"><details><summary>Will you train a model for us?</summary><p>If you want: on the training platform you choose, with your own account (coming soon). We will still tell you when not to.</p></details><details><summary>Do training platforms pay you?</summary><p>No. We sell neither training nor computing power, and no platform pays us. That is why the report can tell you not to train.</p></details><details><summary>How sure is the forecast?</summary><p>It gives a direction and a range, never a single number. Each card says how sure it is, what it rests on and what would change it. With too little to go on, it says it can&#x27;t tell.</p></details><details><summary>What does “at the same cost” mean?</summary><p>Letting the agent try a task again until it works takes more tries. The report counts on your log how many tries that takes on average, and weighs training against it: one try against that many. If your log records tokens, it also says how many tokens one try uses. Comparing in money on this site: coming soon.</p></details><details><summary>When is trying again not an option?</summary><p>When the agent can&#x27;t tell, as it runs, that a try failed, or when its actions change records and aren&#x27;t safe to do twice, such as a refund paid twice. The report asks you about both.</p></details><details><summary>What does my log need to have?</summary><p>Each conversation, every action the agent took and what came back, and ideally whether the task worked and who decided that. The report lists what is missing.</p></details><details><summary>Who can see my log?</summary><p>No one. It is read on this computer and not sent anywhere.</p></details></div></section><section class="band end"><h2>Check your agent&#x27;s logs before you pay to train it.</h2><div class="cta"><a class="btn big primary" href="example-report.html">See an example report</a></div></section></main>
-<footer class="site-foot">Trace Check-up, made with trace2wm. · <a href="../">Shuhui Qu</a> · <a href="../projects/#telemetry">Projects</a> · <a href="../blog/train-or-try-again.html">Write-up: Train, or let it try again?</a> · Want to discuss? Email shuhuiq＠stanford.edu</footer>
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html.js .reveal{opacity:1;transform:none}}
 
-</body></html>
+@media (max-width:1060px){
+  .win-body{grid-template-columns:1fr}
+  .rail{border-right:0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px var(--sp2)}
+  .rail .grp{display:none}
+  .rail .who{grid-column:1/-1;margin-top:var(--sp2)}
+  .trust-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cards3,.proof,.who-grid{grid-template-columns:1fr}
+  .items{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .notes{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .counters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sig{grid-template-columns:1fr}
+  .rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .rail,.steps,.win-bar .crumb{display:none}
+  html.js .panel[hidden]{display:block}
+  .panel + .panel,html.js .panel + .panel{margin-top:var(--sp6);padding-top:var(--sp6);border-top:1px solid var(--line)}
+  .win-bar .ex{margin-left:0}
+  .panels{padding:var(--sp4)}
+  .counter .v{font-size:24px}
+  .row .fig{font-size:24px}
+  .notes,.foot-grid,.trust-grid,.items,.much{grid-template-columns:1fr}
+  .cmp .lane{grid-template-columns:1fr;gap:6px}
+  .file{grid-template-columns:36px minmax(0,1fr)}
+  .file .chip{grid-column:2;justify-self:start}
+  .hero .btn{flex:1 1 100%}
+  .quote{padding:var(--sp5)}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#6366f1"/><path d="M13 44h26M13 53h15" fill="none" stroke="#e0e7ff" stroke-width="5" stroke-linecap="round"/><path d="M11 25h11l7 8 20-21" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 19h19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 8h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 8l-2.5 6h5zM19 8l-2.5 6h5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-app" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M9 9v11" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="5" width="11" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="17" y="5" width="4" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to the content</a>
+
+<header class="site-bar">
+  <a class="home" href="../">Home</a><span class="sep" aria-hidden="true">/</span>
+  <a class="brand" href="./"><svg aria-hidden="true"><use href="#mark"/></svg>Trace Check-up</a>
+  <nav aria-label="On this page">
+    <a class="opt" href="#how">How it works</a>
+    <a class="opt" href="#collect">What to collect</a>
+    <a class="opt" href="#success">Your success check</a>
+    <a class="opt" href="#private">Privacy</a>
+    <a class="opt" href="#faq">Questions</a>
+    <a class="lang" href="index.zh.html" lang="zh" hreflang="zh">中文</a>
+  </nav>
+  <a class="btn primary" href="example-report.html">See an example report</a>
+</header>
+
+<main id="main">
+
+<section class="hero wrap" aria-labelledby="hero-h">
+  <canvas class="sky" aria-hidden="true"></canvas>
+  <p class="eyebrow">For teams that run AI agents</p>
+  <h1 id="hero-h">Post-train your agent on the logs you already have.</h1>
+  <p class="lede">We show what to collect, get the data ready for your training platform, and check the trained model on held-out tasks at the same cost. You train on your own account. Today: the check-up. The rest: coming soon.</p>
+  <div class="cta">
+    <a class="btn primary" href="example-report.html">See an example report</a>
+    <a class="btn ghost" href="#collect">See what to collect <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+  </div>
+  <p class="note">It is open source: the code is published when the first team asks for it. Want to discuss? Email shuhuiq＠stanford.edu</p>
+</section>
+
+<section class="strip" aria-label="Formats it reads">
+  <div class="wrap strip-in">
+    <p class="lbl">Reads the logs you already have</p>
+    <ul>
+      <li>OpenAI chat</li><li>OpenTelemetry GenAI</li><li>Arize Phoenix</li><li>LangSmith</li><li>Langfuse</li>
+      <li>Claude Code</li><li>ShareGPT</li><li>Microsoft ToolTalk</li><li>CSV / Excel</li><li>JSON lines</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band wrap" id="how" aria-labelledby="how-h">
+  <div class="sec-head reveal">
+    <div>
+      <p class="eyebrow">How it works</p>
+      <h2 class="h2" id="how-h">From your log to your training platform</h2>
+      <p class="lede">Start with the logs you already have. The check-up shows what to collect next. Then, coming soon: you get the files your platform needs, submit them yourself, and check the trained model on tasks it did not see.</p>
+    </div>
+    <a class="more-link" href="example-report.html">See an example report <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+  </div>
+
+  <div class="window reveal">
+    <div class="win-bar"><svg aria-hidden="true"><use href="#mark"/></svg><span class="where">Trace Check-up</span><span class="crumb" aria-hidden="true">/</span><span class="crumb" id="win-crumb">Readings</span><span class="chip part ex">Example: a made-up log</span></div>
+    <div class="win-body">
+      <ul class="rail" aria-label="What each step covers, and whether it exists today">
+        <li class="grp" aria-hidden="true">Your log</li>
+        <li data-step="1" class="on">Readings <span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></li>
+        <li data-step="2">Check-up <span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></li>
+        <li class="grp" aria-hidden="true">Your training platform</li>
+        <li data-step="3">Data to send <span class="chip part">In part</span></li>
+        <li data-step="3">Success check <span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></li>
+        <li data-step="3">Held-out tasks <span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></li>
+        <li class="grp" aria-hidden="true">After training</li>
+        <li data-step="4">Compare <span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></li>
+        <li class="who">Runs on your computer. Nothing is uploaded.</li>
+      </ul>
+
+      <div class="panels">
+        <div class="panel" id="p1" role="tabpanel" aria-labelledby="s1" tabindex="0">
+          <div class="panel-h"><div class="l"><h3>Readings</h3><span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></div><span class="sub">Read from the log, on this computer</span></div>
+          <div class="counters">
+            <div class="counter"><span class="k">Conversations</span><span class="v num">16</span><span class="s">32 actions</span></div>
+            <div class="counter"><span class="k">Worked, checked</span><span class="v num">11</span><span class="s">each decided by a check</span></div>
+            <div class="counter"><span class="k">Tasks tried 8+ times</span><span class="v num">2</span><span class="s">12 needed</span></div>
+            <div class="counter"><span class="k">Held-out tasks</span><span class="v num" aria-label="none yet">—</span><span class="s">Coming soon</span></div>
+          </div>
+          <div class="sig">
+            <div class="feed">
+              <p class="feed-h"><span>Last conversations</span><span>decided by</span></p>
+              <ul>
+                <li><span class="res ok">Worked</span><span class="id">change_address-7</span><span class="by">check</span></li>
+                <li><span class="res no">Failed</span><span class="id">change_address-6</span><span class="by">check</span></li>
+                <li><span class="res no">Failed</span><span class="id">change_address-5</span><span class="by">check</span></li>
+                <li><span class="res ok">Worked</span><span class="id">change_address-4</span><span class="by">check</span></li>
+              </ul>
+            </div>
+            <div>
+              <div class="snip">
+                <p class="snip-h"><span class="t">Your logs, today</span><span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></p>
+<pre><span class="k">trace2wm-telemetry</span> report \
+  --logs agent.jsonl --customer --html</pre>
+              </div>
+              <div class="snip">
+                <p class="snip-h"><span class="t">Or record as it runs</span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></p>
+<pre><span class="k">with</span> record(task=<span class="k">"refund_order"</span>) <span class="k">as</span> run:
+    result = agent.run(request)
+    run.outcome(result.ok, by=<span class="k">"check"</span>)
+<span class="c"># a sketch: names may change.
+# writes only to a file on your computer</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="p2" role="tabpanel" aria-labelledby="s2" tabindex="0">
+          <div class="panel-h"><div class="l"><h3>Check-up</h3><span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></div><span class="sub">About a minute</span></div>
+          <div class="rows">
+            <div class="row"><div><p class="q">What to record</p><p class="a">10 of 11 things recorded</p></div><p class="fig num">10/11</p>
+              <div class="meter" role="img" aria-label="10 of 11 recorded"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="off"></i></div></div>
+            <div class="row"><div><p class="q">Enough to train?</p><p class="a">11 conversations worked; can't tell below 5,000</p></div><p class="fig num">11</p></div>
+            <div class="row"><div><p class="q">Tasks tried 8 times</p><p class="a">Collect 10 more tasks, each tried 8 times. Until then: can't tell yet</p></div><p class="fig num">2/12</p>
+              <div class="seg" aria-label="Verdict"><span>Could help</span><span class="on" aria-current="true">Can't tell yet</span><span>Trying again is enough</span></div></div>
+          </div>
+        </div>
+
+        <div class="panel" id="p3" role="tabpanel" aria-labelledby="s3" tabindex="0">
+          <div class="panel-h"><div class="l"><h3>Your training platform</h3><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div><span class="sub">Inkling on Tinker first</span></div>
+          <ul class="files">
+            <li class="file"><span class="ic"><svg aria-hidden="true"><use href="#i-file"/></svg></span><div><p class="n">train.jsonl</p><p class="d">The conversations that worked and were checked, in the format your platform reads. Today the report marks which conversations worked; the file is coming soon.</p></div><span class="chip part">In part</span></li>
+            <li class="file"><span class="ic"><svg aria-hidden="true"><use href="#i-target"/></svg></span><div><p class="n">success_check.py</p><p class="d">Your success check: a draft made from the checks already in your log. You own it and can change it.</p></div><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></li>
+            <li class="file"><span class="ic"><svg aria-hidden="true"><use href="#i-split"/></svg></span><div><p class="n">heldout_tasks.txt</p><p class="d">Tasks kept out of training, split by task name, so the comparison after training is fair. Too few tasks, and it says so.</p></div><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></li>
+          </ul>
+          <p class="submit"><svg aria-hidden="true"><use href="#i-key"/></svg>You submit the files with your own account. We never see your keys.</p>
+          <p class="cap">We add training platforms one at a time, and Tinker is first. The same files are meant for other platforms as they are added.</p>
+        </div>
+
+        <div class="panel" id="p4" role="tabpanel" aria-labelledby="s4" tabindex="0">
+          <div class="panel-h"><div class="l"><h3>Check the trained model</h3><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div><span class="sub">On the held-out tasks</span></div>
+          <div class="cmp" role="img" aria-label="An empty comparison, coming soon: the untrained agent trying again, against the trained agent, on the same tasks">
+            <div class="lane"><span>Untrained, tries again</span><span class="bar"></span></div>
+            <div class="lane"><span>Trained, one try</span><span class="bar"></span></div>
+          </div>
+          <p class="cmp-note">Bring back the trained agent's log. It is checked on the held-out tasks against the untrained agent trying again at the same cost. With too few tasks, it says it can't tell yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps" role="tablist" aria-label="Steps">
+    <button class="step" role="tab" id="s1" aria-controls="p1" aria-selected="true" type="button"><span class="n">01</span><span class="t">Read your log</span><span class="d">Point it at the logs you already have. It shows what to collect next. Coming soon: a few lines that record as your agent runs.</span><span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></button>
+    <button class="step" role="tab" id="s2" aria-controls="p2" aria-selected="false" type="button" tabindex="-1"><span class="n">02</span><span class="t">Check-up</span><span class="d">What your log has, what is missing, and how much more to collect before training.</span><span class="chip today"><svg aria-hidden="true"><use href="#i-check"/></svg>Today</span></button>
+    <button class="step" role="tab" id="s3" aria-controls="p3" aria-selected="false" type="button" tabindex="-1"><span class="n">03</span><span class="t">Get the data ready</span><span class="d">The data to send, your success check and the held-out tasks, as files for your platform. You submit them.</span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></button>
+    <button class="step" role="tab" id="s4" aria-controls="p4" aria-selected="false" type="button" tabindex="-1"><span class="n">04</span><span class="t">Check the trained model</span><span class="d">On held-out tasks, against the untrained agent trying again at the same cost.</span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></button>
+  </div>
+</section>
+
+<section class="band wrap collect" id="collect" aria-labelledby="collect-h">
+  <div class="sec-head reveal"><div>
+    <p class="eyebrow" id="record">What to collect</p>
+    <h2 class="h2" id="collect-h">The eleven things a useful log records</h2>
+    <p class="lede">The check-up marks each one recorded, partly recorded or missing. Start collecting them now, and your log is ready when you want to train.</p>
+  </div></div>
+  <p class="callout reveal"><svg aria-hidden="true"><use href="#i-flag"/></svg><span><b>Most often missing:</b> what came back from each action, a task name, and whether it worked.</span></p>
+  <ol class="items reveal" aria-label="The eleven things to record">
+      <li class="item"><span class="no num">01</span><p>A number or name for each conversation, and the order of its steps</p></li>
+      <li class="item"><span class="no num">02</span><p>Every action: which tool, and what was sent to it</p></li>
+      <li class="item often"><span class="no num">03</span><p>What came back from each action, exactly as it was, errors and empty answers too</p><span class="chip miss"><svg aria-hidden="true"><use href="#i-flag"/></svg>Often missing</span></li>
+      <li class="item often"><span class="no num">04</span><p>A task name: the same name every time the same kind of job is done</p><span class="chip miss"><svg aria-hidden="true"><use href="#i-flag"/></svg>Often missing</span></li>
+      <li class="item often"><span class="no num">05</span><p>Whether each conversation worked: yes or no, or a score from 0 to 1, and who decided it (an automatic check as it ran, or a person afterwards)</p><span class="chip miss"><svg aria-hidden="true"><use href="#i-flag"/></svg>Often missing</span></li>
+      <li class="item"><span class="no num">06</span><p>Everything the person said to the agent, the first message and any later ones</p></li>
+      <li class="item"><span class="no num">07</span><p>The same task tried at least 8 times, each marked worked or failed</p></li>
+      <li class="item"><span class="no num">08</span><p>The instructions (system prompt) and the list of tools the agent had in each conversation, as they were then, with what each tool needs</p></li>
+      <li class="item"><span class="no num">09</span><p>Which AI model (and version) ran the conversation</p></li>
+      <li class="item"><span class="no num">10</span><p>How many tokens each conversation used, input and output</p></li>
+      <li class="item"><span class="no num">11</span><p>Optional: a copy of the records the agent will work on, taken before it starts</p></li>
+  </ol>
+  <h3 class="how-much-h reveal">How much</h3>
+  <ul class="much">
+    <li class="reveal"><span class="big num">8</span><span class="unit">tries per task</span><p>Each task tried 8 times, each marked worked or failed: then you can see how much trying again already fixes.</p></li>
+    <li class="reveal"><span class="big num">5,000</span><span class="unit">conversations that worked</span><p>About 5,000, each saying who decided it worked, before training. Below this, published results go both ways (MUA-RL, arXiv 2508.18669; ToolRL, arXiv 2504.13958).</p></li>
+    <li class="reveal"><span class="big">Many</span><span class="unit">different tasks</span><p>Many different tasks tell you more than many copies of a few.</p></li>
+  </ul>
+</section>
+
+<section class="band wrap" id="success" aria-labelledby="success-h">
+  <div class="sec-head reveal"><div>
+    <p class="eyebrow">Coming soon</p>
+    <h2 class="h2" id="success-h">You decide what counts as success.</h2>
+    <p class="lede">The rule that scores your agent's work belongs to you. We help you write it down, test it on your log, and take it to your platform.</p>
+  </div></div>
+  <ul class="cards3">
+    <li class="card lead reveal"><div class="top"><span class="ic"><svg aria-hidden="true"><use href="#i-target"/></svg></span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div>
+      <h3>Your own success check</h3>
+      <p>A scoring rule you own and can change, with versions. We draft it from the checks already in your log. It scores your log on your computer and goes with you to your platform.</p>
+      <pre class="rule" aria-label="Example of a success check, a sketch"><span class="c"># success_check.py · v1 · yours</span>
+<span class="k">def</span> score(conversation):
+    <span class="k">return</span> refund_matches_order(conversation)</pre></li>
+    <li class="card reveal"><div class="top"><span class="ic"><svg aria-hidden="true"><use href="#i-app"/></svg></span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div>
+      <h3>One app on your computer</h3>
+      <p>Record, check-up, your success check, the files for your platform and the comparison after training, in one app that runs on your computer.</p></li>
+    <li class="card reveal"><div class="top"><span class="ic"><svg aria-hidden="true"><use href="#i-compare"/></svg></span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div>
+      <h3>Compare it yourself</h3>
+      <p>The app calls your trained model through your own Tinker account, from your computer, on tasks it was not trained on. Or train a small model and download it: Inkling-Small is too large for a laptop.</p></li>
+    <li class="card reveal"><div class="top"><span class="ic"><svg aria-hidden="true"><use href="#i-key"/></svg></span><span class="chip soon"><svg aria-hidden="true"><use href="#i-clock"/></svg>Coming soon</span></div>
+      <h3>One-click training, or connect your training account</h3>
+      <p>Start training from the app, or connect your account. Training still runs on your platform, with your account.</p></li>
+  </ul>
+</section>
+
+<section class="band wrap" aria-labelledby="src-h" style="padding-top:0">
+  <div class="proof">
+    <figure class="quote reveal">
+      <blockquote>“Record 10 more tasks, each tried 8 times and marked worked or failed.”</blockquote>
+      <figcaption>The next step in the example report, on a made-up log</figcaption>
+    </figure>
+    <div class="reveal">
+      <p class="eyebrow">Sources</p>
+      <h2 class="h2" id="src-h">Every sentence points to its source</h2>
+      <p class="lede">Each sentence rests on a reading from your own log or on a published result, named with its paper. When there isn't enough to go on, it says it can't tell yet.</p>
+      <ul class="src" aria-label="Published results the forecast cites">
+        <li><span class="who">Yue et al.</span><span class="id">arXiv 2504.13837</span></li>
+        <li><span class="who">Tool-N1</span><span class="id">arXiv 2505.00024</span></li>
+        <li><span class="who">ToolRL</span><span class="id">arXiv 2504.13958</span></li>
+        <li><span class="who">MUA-RL</span><span class="id">arXiv 2508.18669</span></li>
+        <li><span class="who">LOOP</span><span class="id">arXiv 2502.01600</span></li>
+        <li><span class="who">Simia</span><span class="id">arXiv 2511.01824</span></li>
+        <li><span class="who">APIGen-MT</span><span class="id">arXiv 2504.03601</span></li>
+        <li><span class="who">ToolRM</span><span class="id">arXiv 2509.11963</span></li>
+        <li><span class="who">Qwen3</span><span class="id">arXiv 2505.09388</span></li>
+        <li><span class="who">Yang and Chen</span><span class="id">arXiv 2609.22547</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="trust band" id="private" aria-labelledby="trust-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <p class="eyebrow">Privacy</p>
+        <h2 class="h2" id="trust-h">Your log stays on your computer.</h2>
+      </div>
+      <p class="badge"><svg aria-hidden="true"><use href="#i-open"/></svg>Open source · code published when the first team asks</p>
+    </div>
+    <ul class="trust-grid">
+      <li class="reveal"><svg aria-hidden="true"><use href="#i-laptop"/></svg><h3>It runs on your computer</h3><p>Nothing is uploaded to us or to anyone else.</p></li>
+      <li class="reveal"><svg aria-hidden="true"><use href="#i-file"/></svg><h3>Only the files you give it</h3><p>It never changes them. Emails, most card numbers and common keys are hidden as soon as it reads the log; names and addresses are not.</p></li>
+      <li class="reveal"><svg aria-hidden="true"><use href="#i-key"/></svg><h3>You submit to your platform</h3><p>When the files are ready (coming soon), you send them with your own account. We never touch your keys.</p></li>
+      <li class="reveal"><svg aria-hidden="true"><use href="#i-scale"/></svg><h3>Neutral</h3><p>No training platform pays us, so the advice doesn't depend on where you train.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="band wrap" aria-labelledby="who-h">
+  <div class="who-grid">
+    <div class="reveal">
+      <p class="eyebrow">About</p>
+      <h2 class="h2" id="who-h">Open source</h2>
+      <p class="lede">A small project. We sell neither training nor computing power, and no training platform pays us.</p>
+    </div>
+    <div class="who-card reveal">
+      <p><b>It is open source:</b> the code is published when the first team asks for it.</p>
+      <p>Want to discuss? Email shuhuiq＠stanford.edu</p>
+    </div>
+  </div>
+</section>
+
+<section class="band wrap" id="notes" aria-labelledby="notes-h" style="padding-top:0">
+  <div class="sec-head reveal">
+    <div><p class="eyebrow">Writing</p><h2 class="h2" id="notes-h">On agent logs and training</h2></div>
+    <a class="more-link" href="../blog/">All posts <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+  </div>
+  <ul class="notes">
+    <li class="reveal"><a class="note-card" href="../blog/train-or-try-again.html">
+      <span class="art" aria-hidden="true"><svg viewBox="0 0 160 90"><path d="M10 70h40l20-30 20 18 30-40h30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="body"><span class="kind">October 2026</span><h3>Train, or let it try again? What your agent's own logs can already tell you</h3></span></a></li>
+    <li class="reveal"><a class="note-card" href="../blog/before-you-train-on-agent-logs.html">
+      <span class="art" aria-hidden="true"><svg viewBox="0 0 160 90"><path d="M50 22l8 8 16-16M50 46l8 8 16-16" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M86 24h30M86 48h22M50 70h66" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span>
+      <span class="body"><span class="kind">October 2026</span><h3>Getting your agent's logs ready for post-training</h3></span></a></li>
+    <li class="reveal"><a class="note-card" href="../blog/review-agent-logs-training.html">
+      <span class="art" aria-hidden="true"><svg viewBox="0 0 160 90"><rect x="30" y="16" width="100" height="58" rx="8" fill="none" stroke="currentColor" stroke-width="5"/><path d="M48 36h64M48 52h44" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span>
+      <span class="body"><span class="kind">October 2026 · literature review</span><h3>From agent logs to training: what the papers measure, and what they skip</h3></span></a></li>
+    <li class="reveal"><a class="note-card" href="../blog/review-checking-agents.html">
+      <span class="art" aria-hidden="true"><svg viewBox="0 0 160 90"><circle cx="80" cy="45" r="28" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="80" cy="45" r="12" fill="none" stroke="currentColor" stroke-width="5"/></svg></span>
+      <span class="body"><span class="kind">October 2026 · literature review</span><h3>Checking what AI agents do: judges, verifiers and guardrails</h3></span></a></li>
+  </ul>
+</section>
+
+<section class="band wrap" id="faq" aria-labelledby="faq-h" style="padding-top:0">
+  <div class="sec-head reveal"><div><h2 class="h2" id="faq-h">Questions</h2></div></div>
+  <div class="faq">
+    <details><summary>Will you train a model for us?</summary><p>Training runs on the platform you choose, with your own account. We get the data ready: what to send, a success check and the held-out tasks, as files you submit (coming soon). Then we help you check the trained model (also coming soon).</p></details>
+    <details><summary>Do training platforms pay you?</summary><p>No. We sell neither training nor computing power, and no platform pays us. So the advice doesn't depend on which platform you pick.</p></details>
+    <details><summary>How sure is the forecast?</summary><p>It gives a direction and a range, never a single number. Each card says how sure it is, what it rests on and what would change it. With too little to go on, it says it can't tell.</p></details>
+    <details><summary>What does “at the same cost” mean?</summary><p>Letting the agent try a task again until it works takes more tries. The report counts on your log how many tries that takes on average, and weighs training against it: one try against that many. Comparing in money in the report: coming soon.</p></details>
+    <details><summary>When is trying again not an option?</summary><p>When the agent can't tell, as it runs, that a try failed, or when its actions change records and aren't safe to do twice, such as a refund paid twice. The report asks you about both.</p></details>
+    <details><summary>What does my log need to have?</summary><p>Each conversation, every action the agent took and what came back, and ideally whether the task worked and who decided that. The report lists what is missing.</p></details>
+    <details><summary>Who can see my log?</summary><p>No one. It is read on this computer and not sent anywhere.</p></details>
+  </div>
+</section>
+
+<section class="band wrap end" aria-labelledby="end-h">
+  <h2 class="h2" id="end-h">Post-train your agent on the logs you already have.</h2>
+  <div class="cta">
+    <a class="btn primary" href="example-report.html">See an example report</a>
+    <a class="btn ghost" href="#collect">See what to collect</a>
+  </div>
+  <p class="note">Want to discuss? Email shuhuiq＠stanford.edu</p>
+</section>
+</main>
+
+<footer class="foot wrap">
+  <div class="foot-grid">
+    <section aria-labelledby="f1"><h2 id="f1">On this page</h2><ul><li><a href="#how">How it works</a></li><li><a href="#collect">What to collect</a></li><li><a href="#success">Your success check</a></li><li><a href="#private">Privacy</a></li><li><a href="#faq">Questions</a></li></ul></section>
+    <section aria-labelledby="f2"><h2 id="f2">Elsewhere</h2><ul><li><a href="example-report.html">Example report</a></li><li><a href="example-report.zh.html" hreflang="zh" lang="zh">示例报告（中文）</a></li><li><a href="../">Home</a></li><li><a href="../projects/#telemetry">Projects</a></li><li><a href="../blog/">Blog</a></li></ul></section>
+    <section aria-labelledby="f3"><h2 id="f3">Contact</h2><p>Want to discuss? Email shuhuiq＠stanford.edu</p><p style="margin-top:var(--sp2)">It is open source: the code is published when the first team asks for it.</p></section>
+  </div>
+  <p class="base"><svg aria-hidden="true"><use href="#mark"/></svg><span>Trace Check-up, made with trace2wm.</span></p>
+</footer>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.step[role="tab"]'));
+  var rail=[].slice.call(document.querySelectorAll('.rail li[data-step]'));
+  function pick(tab,focus){
+    tabs.forEach(function(t){
+      var on=t===tab; t.setAttribute("aria-selected",on?"true":"false"); t.tabIndex=on?0:-1;
+      var p=document.getElementById(t.getAttribute("aria-controls"));
+      if(on){p.hidden=false;p.classList.remove("in");void p.offsetWidth;p.classList.add("in")}else{p.hidden=true}
+    });
+    var n=tab.id.slice(1);
+    var h=document.getElementById(tab.getAttribute("aria-controls")).querySelector("h3");
+    if(h)document.getElementById("win-crumb").textContent=h.textContent;
+    rail.forEach(function(li){li.classList.toggle("on",li.getAttribute("data-step")===n)});
+    if(focus)tab.focus();
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener("click",function(){pick(t,false)});
+    t.addEventListener("keydown",function(e){
+      var k=e.key,j=null;
+      if(k==="ArrowRight"||k==="ArrowDown")j=(i+1)%tabs.length;
+      else if(k==="ArrowLeft"||k==="ArrowUp")j=(i-1+tabs.length)%tabs.length;
+      else if(k==="Home")j=0; else if(k==="End")j=tabs.length-1;
+      if(j!==null){e.preventDefault();pick(tabs[j],true)}
+    });
+  });
+  var narrow=window.matchMedia("(max-width:560px)");
+  function mode(){
+    if(narrow.matches){document.querySelectorAll(".panel").forEach(function(p){p.hidden=false})}
+    else if(tabs.length){pick(tabs.filter(function(t){return t.getAttribute("aria-selected")==="true"})[0]||tabs[0],false)}
+  }
+  mode(); if(narrow.addEventListener)narrow.addEventListener("change",mode);
+  var els=[].slice.call(document.querySelectorAll(".reveal"));
+  var still=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(still||!("IntersectionObserver" in window)){els.forEach(function(e){e.classList.add("seen")});return}
+  var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add("seen");io.unobserve(en.target)}})},{rootMargin:"0px 0px -8% 0px"});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
+<script>
+(function(){
+  var hero=document.querySelector(".hero"),cv=hero&&hero.querySelector("canvas.sky");
+  var still=window.matchMedia("(prefers-reduced-motion: reduce)");
+  if(!cv||still.matches)return;
+  var gl=null;try{gl=cv.getContext("webgl",{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:"low-power"})}catch(e){}
+  if(!gl)return;
+  var vs="attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+  var fs="precision mediump float;uniform vec2 r;uniform float t;uniform vec3 bg;uniform vec4 c1,c2,c3;"+
+    "float b(vec2 p,vec2 c,vec2 s){float f=clamp(1.-length((p-c)/s)/.7,0.,1.);return f*f*(3.-2.*f);}"+
+    "void main(){vec2 p=gl_FragCoord.xy/r;p.y=1.-p.y;"+
+    "p+=.035*vec2(sin(p.y*4.+t*.23),cos(p.x*3.5-t*.19));"+
+    "vec3 c=bg;"+
+    "c=mix(c,c1.rgb,c1.a*b(p,vec2(.80+.14*sin(t*.12),.12+.16*cos(t*.14)),vec2(.60,.70)));"+
+    "c=mix(c,c2.rgb,c2.a*b(p,vec2(.95-.14*cos(t*.10),.68+.18*sin(t*.13)),vec2(.45,.55)));"+
+    "c=mix(c,c3.rgb,c3.a*b(p,vec2(.58+.22*sin(t*.08),.05+.14*sin(t*.16)),vec2(.40,.50)));"+
+    "gl_FragColor=vec4(c,1.);}";
+  function sh(type,src){var o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null}
+  var v=sh(gl.VERTEX_SHADER,vs),f=sh(gl.FRAGMENT_SHADER,fs);if(!v||!f)return;
+  var pr=gl.createProgram();gl.attachShader(pr,v);gl.attachShader(pr,f);gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))return;
+  gl.useProgram(pr);
+  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  var la=gl.getAttribLocation(pr,"a");gl.enableVertexAttribArray(la);gl.vertexAttribPointer(la,2,gl.FLOAT,false,0,0);
+  var U={};["r","t","bg","c1","c2","c3"].forEach(function(k){U[k]=gl.getUniformLocation(pr,k)});
+  function col(s){s=s.trim();var m;
+    if((m=s.match(/^#([0-9a-f]{6})$/i))){var n=parseInt(m[1],16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255,1]}
+    if((m=s.match(/^rgba?\(([^)]+)\)$/i))){var q=m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);return[q[0]/255,q[1]/255,q[2]/255,q.length>3?q[3]:1]}
+    return null}
+  function tokens(){var cs=getComputedStyle(document.body),o={};
+    ["bg","wash-1","wash-2","wash-3"].forEach(function(k){o[k]=col(cs.getPropertyValue("--"+k))});
+    if(!o.bg||!o["wash-1"]||!o["wash-2"]||!o["wash-3"])return false;
+    gl.uniform3f(U.bg,o.bg[0],o.bg[1],o.bg[2]);
+    gl.uniform4fv(U.c1,o["wash-1"]);gl.uniform4fv(U.c2,o["wash-2"]);gl.uniform4fv(U.c3,o["wash-3"]);return true}
+  if(!tokens())return;
+  var raf=0,shown=!document.hidden,near=true,last=0,t0=performance.now();
+  function size(){var d=Math.min(window.devicePixelRatio||1,1.5),w=Math.max(1,Math.round(hero.clientWidth*d)),h=Math.max(1,Math.round(hero.clientHeight*d));
+    if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;gl.viewport(0,0,w,h)}gl.uniform2f(U.r,w,h)}
+  function frame(now){raf=0;
+    if(now-last>=33){last=now;size();gl.uniform1f(U.t,(now-t0)/1000);gl.drawArrays(gl.TRIANGLES,0,3);cv.classList.add("on")}
+    go()}
+  function go(){if(!raf&&shown&&near&&!still.matches)raf=requestAnimationFrame(frame)}
+  function stop(){if(raf){cancelAnimationFrame(raf);raf=0}}
+  document.addEventListener("visibilitychange",function(){shown=!document.hidden;shown?go():stop()});
+  if("IntersectionObserver" in window)new IntersectionObserver(function(es){near=es[0].isIntersecting;near?go():stop()}).observe(hero);
+  if(still.addEventListener)still.addEventListener("change",function(){if(still.matches){stop();cv.classList.remove("on")}else go()});
+  var dark=window.matchMedia("(prefers-color-scheme: dark)");if(dark.addEventListener)dark.addEventListener("change",function(){tokens();last=0});
+  cv.addEventListener("webglcontextlost",function(e){e.preventDefault();stop();cv.classList.remove("on")});
+  go();
+})();
+</script>
+</body>
+</html>
