@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Before you train on your agent's logs · Shuhui Qu</title>
-<meta name="description" content="What Trace Check-up checks before a team spends money training on its agent's logs, and the mistakes it was built to catch.">
+<title>Getting your agent's logs ready for post-training · Shuhui Qu</title>
+<meta name="description" content="What Trace Check-up checks in an agent's logs to get them ready for post-training, and the common mistakes it finds.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -18,40 +18,38 @@
 
 <div class="container post">
 <span class="ico logo lg" aria-hidden="true"><img src="../logos/trace-checkup.svg" alt=""></span>
-<h1>Before you train on your agent's logs</h1>
+<h1>Getting your agent's logs ready for post-training</h1>
 <div class="meta">October 2026</div>
 
-<p>A team has months of logs of its AI agent at work and wants to fine-tune or run RL on them. Finding out whether
-that will work by training costs money and weeks. I built <a href="../projects/#telemetry">Trace Check-up</a> to
-answer from the logs alone, before anything is trained: can a training environment and a reward be built from these
-recordings; what data to collect next; roughly what each post-training method can reach; and, after training,
-whether a claimed improvement is real.</p>
+<p>A team has months of logs of its AI agent at work and wants to post-train on them, by fine-tuning or RL. I built
+<a href="../projects/#telemetry">Trace Check-up</a> to help, starting from the logs alone: can a training environment
+and a reward be built from these recordings; what data to collect next; and roughly what each post-training method can
+reach. Checking, after training, whether a claimed improvement is real is coming soon.</p>
 
 <h3>How you use it</h3>
 
 <p>Drop in the logs you already have: OpenAI chat transcripts, OpenTelemetry GenAI traces, Arize Phoenix span
-tables, ToolTalk or ATIF trajectories, or a spreadsheet with one tool call per row. Emails, phone numbers and card
-numbers are hidden as soon as the log is read. It runs on your own computer, where nothing is sent anywhere
-(<a href="../trace-checkup/">Trace Check-up</a>).</p>
+tables, ToolTalk or ATIF trajectories, or a spreadsheet with one tool call per row. Emails, most card
+numbers and phone numbers written in common ways are hidden as soon as the log is read; names and addresses are not. It runs on your own computer, where nothing is sent anywhere
+(<a href="../trace-checkup/">Trace Check-up</a>). The code is published when the first team asks for it; until
+then, the <a href="../trace-checkup/example-report.html">example report</a> shows what it writes.</p>
 
 <p>A minute later you get two pages. The first is for the people who run the agent: it opens with one verdict
-&mdash; &ldquo;Fix the logging before training the AI&rdquo;, or &ldquo;Trying again already works well&rdquo;
+&mdash; &ldquo;Check the made-up IDs before training the AI&rdquo;, or &ldquo;Trying again already works well&rdquo;
 &mdash; and then the checks behind it, in plain words. The second is for the engineer, with every number, the rule
 that produced it and the files it was read from. Another agent can ask the same questions through MCP.</p>
 
-<h3>The mistakes it was built to catch</h3>
+<h3>The mistakes it checks for</h3>
 
-<p>Every check in it exists because the mistake behind it happened in my own trace2wm project and was found
-late:</p>
+<p>Each check looks for a mistake that is easy to make and expensive to find late:</p>
 <ul>
-  <li>A corpus that was 38.5 % empty episodes looked fine by row count.</li>
-  <li>29 of 77 training tasks had no demonstration at all.</li>
-  <li>Evaluation rendered prompts differently from training &mdash; five times.</li>
-  <li>The only fine-tuning gain was on the 6 tasks the model had trained on; nothing was evaluated on held-out
-  tasks.</li>
-  <li>93 % of the tokens the fine-tuning loss was computed on were not actions.</li>
-  <li>22 of 75 final states the simulator produced were rejected by the real scorer.</li>
-  <li>Checkpoints were picked by a validation loss computed on a different random 25 examples each time.</li>
+  <li>A corpus with many empty episodes can look fine by row count.</li>
+  <li>Many training tasks can have no demonstration at all.</li>
+  <li>Evaluation can render prompts differently from training.</li>
+  <li>A fine-tuning gain can come only from the tasks the model trained on, when nothing is evaluated on held-out tasks.</li>
+  <li>Most of the tokens a fine-tuning loss is computed on may not be actions.</li>
+  <li>Final states a simulator produces can be rejected by the real scorer.</li>
+  <li>Checkpoints can be picked by a validation loss computed on a different random sample each time.</li>
 </ul>
 <p>None of these needs a GPU to find. Each is a count over the logs, the configuration or the evaluation files, and
 each blocks a specific next step until it is fixed.</p>
@@ -73,8 +71,8 @@ arrangement of them could be significant, and most tasks never succeed at all.</
 
 <p>So the report compares steps instead. It replays the saved trajectories through both environments and, for each
 task, counts the tool calls one environment ran and the other refused (an exact paired test, corrected for the number
-of tasks). On trace2wm's corpus that gave 20,814 paired calls and a verdict on 23 of 23 tasks, where the success-rate
-test left 9 undecided. Each disagreement also says why &mdash; an argument the real tool does not accept, a refusal
+of tasks). Because each task has many calls, this test can decide tasks that the
+success-rate test leaves undecided. Each disagreement also says why &mdash; an argument the real tool does not accept, a refusal
 the simulator has no check for, a state the real scorer will not read &mdash; which points at the file where the fix
 belongs.</p>
 
@@ -91,15 +89,14 @@ And their report never carries my project's conclusions: a customer is owed read
 <h3>The comparison I have not seen anyone make</h3>
 
 <p>Platforms that check a training run compare the trained model with the one in production. I have not found one
-that compares it with the untrained agent simply trying again at the same cost &mdash; and retrying is often what
-you should do. Today the page shows two cards side by side: <i>if the agent tries again</i>, measured on the
+that compares it with the untrained agent simply trying again at the same cost &mdash; and sometimes retrying is the cheaper fix. Today the page shows two cards side by side: <i>if the agent tries again</i>, measured on the
 customer's own log (tasks done after one try and after k tries, and what the extra tries cost), and <i>if you train
 a small model now</i>, a rough estimate from published results, marked low-reliability because those results go
 both ways &mdash; on the same ~2,000 starting examples, one study's 8B model got worse while its 14B model got
 better. Measuring the comparison directly, from a log before training and a log after, at the same spend, is the
 next piece; it is coming soon.</p>
 
-<p class="caveat">Limits: the checks were built on trace2wm's own corpora and mistakes; another team's logs will
+<p class="caveat">Limits: the checks were built on one project's own logs; another team's logs will
 break assumptions mine did not. The forecasts from published work are deliberately labelled low-reliability.</p>
 
 </div>

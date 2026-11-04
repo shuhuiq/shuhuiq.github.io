@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Train, or let it try again? What your agent's own logs can already tell you · Shuhui Qu</title>
-<meta name="description" content="Three questions a team can answer from its AI agent's log before paying to train: what to record, how much is enough, and training compared with trying again, counted in tries. With a small tool that runs on your own computer.">
+<meta name="description" content="Three questions a team can answer from its AI agent's log before it post-trains: what to record, how much is enough, and training compared with trying again, counted in tries. With a small tool that runs on your own computer.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@ choose on a hunch.</p>
 
 <p>I built a small tool, <a href="../trace-checkup/">Trace Check-up</a>, that answers from the log the agent already
 writes, on your own computer, before anything is trained. An earlier post,
-<a href="before-you-train-on-agent-logs.html">Before you train on your agent's logs</a>, lists the mistakes it was
+<a href="before-you-train-on-agent-logs.html">Getting your agent's logs ready for post-training</a>, lists the mistakes it was
 built to catch. This one is about the three questions it answers, and what it says when it can't answer them.</p>
 
 <h3>1. What to record</h3>
@@ -112,8 +112,8 @@ so: can't tell yet.</p>
 anywhere, so the tool runs on your computer, offline, on the CPU. On the made-up log the whole report took under a
 second on a laptop.</p>
 
-<p>The answer also must not depend on who sells training. No training platform pays me, the advice includes
-&ldquo;don't train&rdquo;, and there is no service behind the tool to sell. It does not promise that training will
+<p>The answer also must not depend on who sells training. No training platform pays me, the advice can be
+&ldquo;not yet&rdquo;, and there is no service behind the tool to sell. It does not promise that training will
 help.</p>
 
 <h3>Can I run it?</h3>

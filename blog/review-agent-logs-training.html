@@ -138,17 +138,17 @@ tasks, so a trivial agent scored 38 % and beat a GPT-4o agent; flaws like this m
 100 % in relative terms <a class="cite" href="#ref-19">(Zhu et al. 2025)</a>. Many agent benchmarks &ldquo;have inadequate
 holdout sets, and sometimes none at all&rdquo;, and ignore cost <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a>.
 Training on the test task confounds comparisons unless every arm is trained on the same task data
-<a class="cite" href="#ref-21">(Dominguez-Olmedo et al. 2024)</a>. The mistakes Trace Check-up was built to catch
-&mdash; each of which happened in my own trace2wm project &mdash; line up with published ones:</p>
+<a class="cite" href="#ref-21">(Dominguez-Olmedo et al. 2024)</a>. The mistakes Trace Check-up
+checks for line up with published ones:</p>
 
 <table>
-  <tr><th>what we found in our own project</th><th>published analogue</th></tr>
-  <tr><td>38.5 % of episodes empty, though the row count looked fine</td><td>τ-bench counted empty responses as success <a class="cite" href="#ref-19">(Zhu et al. 2025)</a></td></tr>
-  <tr><td>29 of 77 training tasks had no demonstration</td><td>all-or-none tasks carry no training signal <a class="cite" href="#ref-8">(Foster et al. 2025)</a></td></tr>
-  <tr><td>evaluation prompts rendered differently from training, five times</td><td>format-following entangled with reasoning <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
-  <tr><td>the only gain was on the 6 trained tasks; nothing held out</td><td>holdouts must match the level of generality <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a></td></tr>
-  <tr><td>93 % of the tokens the loss was computed on were not actions</td><td>capabilities learned at different speeds <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
-  <tr><td>22 of 75 simulated final states rejected by the real scorer</td><td>31.2 % of ToolEmu-found failures not valid <a class="cite" href="#ref-10">(Ruan et al. 2023)</a>; 16&ndash;40 % user-simulator error <a class="cite" href="#ref-12">(Barres et al. 2025)</a></td></tr>
+  <tr><th>mistake Trace Check-up checks for</th><th>published analogue</th></tr>
+  <tr><td>many empty episodes, though the row count looks fine</td><td>τ-bench counted empty responses as success <a class="cite" href="#ref-19">(Zhu et al. 2025)</a></td></tr>
+  <tr><td>training tasks with no demonstration</td><td>all-or-none tasks carry no training signal <a class="cite" href="#ref-8">(Foster et al. 2025)</a></td></tr>
+  <tr><td>evaluation prompts rendered differently from training</td><td>format-following entangled with reasoning <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
+  <tr><td>a gain only on trained tasks; nothing held out</td><td>holdouts must match the level of generality <a class="cite" href="#ref-20">(Kapoor et al. 2024)</a></td></tr>
+  <tr><td>most of the tokens the loss is computed on are not actions</td><td>capabilities learned at different speeds <a class="cite" href="#ref-7">(Chen et al. 2024)</a></td></tr>
+  <tr><td>simulated final states the real scorer rejects</td><td>31.2 % of ToolEmu-found failures not valid <a class="cite" href="#ref-10">(Ruan et al. 2023)</a>; 16&ndash;40 % user-simulator error <a class="cite" href="#ref-12">(Barres et al. 2025)</a></td></tr>
 </table>
 
 <h2 id="forecast">Forecasting before training</h2>
@@ -165,14 +165,13 @@ Learnability is estimated online, from the policy's own samples during training 
 <ul>
   <li><b>Before training, from logs alone.</b> It reads the logs a team already has (OpenAI chat, OpenTelemetry GenAI,
   Phoenix spans, ToolTalk / ATIF trajectories, spreadsheets), only reads, runs on a CPU and makes no API calls, and
-  answers four questions: can a training environment and a reward be built, what to collect next, what each method
-  could reach, and whether a claimed gain is real. To our knowledge, no published tool turns heterogeneous agent logs
+  answers three questions today: can a training environment and a reward be built, what to collect next, and what
+  each method could reach. Whether a claimed gain is real is coming soon. To our knowledge, no published tool turns heterogeneous agent logs
   into train / collect / retry recommendations without training; the nearest neighbour, the Agent Data Protocol, unifies
   formats in order to train.</li>
-  <li><b>Simulator fidelity per task, with a test.</b> Instead of human plausibility ratings, it replays the saved
+  <li><b>Simulator fidelity per task, with a test.</b> When a team has both a simulator and the real system, it replays the saved
   trajectories through both the simulator and the real environment and compares, call by call, which calls one ran and
-  the other refused (an exact paired test, corrected for the number of tasks). On its own corpus, 20,814 paired calls
-  decided 23 of 23 tasks, where comparing success rates left 9 undecided (our measurement). ToolTalk's replay-style
+  the other refused (an exact paired test, corrected for the number of tasks). ToolTalk's replay-style
   evaluation <a class="cite" href="#ref-24">(Farn &amp; Shin 2023)</a> is the closest structure; it does not turn replay
   into a fidelity test.</li>
   <li><b>Train or try again, at the same cost.</b> It applies cost-aware evaluation to the training decision itself:
