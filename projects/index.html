@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projects · Shuhui Qu</title>
-<meta name="description" content="Morpheus, Honeyguide and Trace Check-up: checking AI-made plans, paying less for LLM answers, and getting an agent's logs ready for post-training.">
+<meta name="description" content="Morpheus, Honeyguide and Trace Check-up: a receipt for every AI conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -18,40 +18,45 @@
 
 <div class="container post">
   <h1>Projects</h1>
-  <p class="meta">Three products for people and teams who put AI to work: check an AI-made plan before
-  you follow it, pay less for LLM answers, and post-train an agent on the logs you already have, starting with a check-up.</p>
+  <p class="meta">Three products for people and teams who put AI to work: a receipt you can check for every AI
+  conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.</p>
 
   <section class="prod" id="morpheus">
     <div class="prod-top"><span class="ico logo lg" aria-hidden="true"><img src="../logos/morpheus.svg" alt=""></span>
       <div><div class="prod-label">Morpheus &middot; morpheusplan.com &middot; invite-only beta</div>
-      <h2 class="prod-h">A second opinion for every AI-made plan.</h2></div>
+      <h2 class="prod-h">AI says &ldquo;done.&rdquo; On what grounds?</h2></div>
     </div>
-    <p class="prod-sub">Paste a plan from anywhere &mdash; ChatGPT, Claude, Gemini, a friend's text or your own notes
-    &mdash; and write your rules the way you would say them: &ldquo;home by 6&rdquo;, &ldquo;$60 max&rdquo;. Morpheus
-    checks every line against every rule. It doesn't just say &ldquo;looks good&rdquo;: it points to the exact line
-    that breaks, says by how much, and fixes it without wrecking the rest.</p>
+    <p class="prod-sub">A receipt you can check, for every AI conclusion and every AI action. Write your requirements
+    the way you would say them &mdash; &ldquo;$600 in total at most&rdquo;, &ldquo;arrive in Boston by 12:00&rdquo;
+    &mdash; and give Morpheus the AI's plan or action. Each requirement gets one of three verdicts, and each verdict
+    says who decided it: computed by code, judged by AI, or confirmed by you. Never blended.</p>
     <ul class="prod-list">
-      <li><b>An independent check.</b> The plan is not graded by the AI that wrote it. A rule counts as met only when
-      our checker and a second AI reader agree. <span class="proof">In planted-mistake tests the default check found
-      19&ndash;20 of 20 hidden mistakes and called no broken plan fine.</span></li>
-      <li><b>The exact line, and by how much.</b> Not &ldquo;might be a bit tight&rdquo;, but &ldquo;Sunday 7 h 10 min,
-      10 min over your 7 h limit&rdquo;, on the line where it happens.</li>
-      <li><b>Fixes that keep the plan whole.</b> Every fix is checked again before you see it; a fix that drops lunch or
-      only edits a number to pass is never offered. <span class="proof">With simulated users, 9 of 10 tasks ended with
-      every rule met, and no broken rule was marked met by the plan's own numbers; a task cost $0.116.</span></li>
-      <li><b>It says who decided.</b> Calculated, judged by AI, or confirmed by you: met, not met, unclear, you
-      confirmed or not checked. It never fills in a missing fact; it marks it &ldquo;unclear&rdquo; and asks.</li>
-      <li><b>Also for AI agents.</b> The same checker reads each command a coding agent is about to run, inside Claude
-      Code, Codex and Cursor, and stops the ones that break a rule you set. For ML experiments, it keeps a record anyone
-      can re-check: a locked scoring program and at least 3 runs per change. <span class="proof">Replayed on 4,743 real
-      tool calls from 20 coding-agent sessions: it blocked the 10 that broke the rule and none that didn't (after one
-      fix). The experiment record is tested on a toy example, not yet on a real training run.</span></li>
+      <li><b>Met, with a receipt.</b> The arithmetic, the quote or the execution result behind it: &ldquo;Line 1
+      arrives at 11:45, 15 minutes early.&rdquo; Not &ldquo;looks good&rdquo;.</li>
+      <li><b>Violated: which line, by how much.</b> &ldquo;190 + 420 + 15 = 625 &gt; 600. That is $25 over.&rdquo;
+      The violation is repaired in place, and only what changed is checked again.</li>
+      <li><b>Unclear: what is missing, and who supplies it.</b> A fact is missing: fetch it, then check again.
+      Several options fit: it lists them, and you pick. Nothing fits: re-read the requirement. &ldquo;No counterexample
+      found&rdquo; is never &ldquo;met&rdquo;, and it never forces an answer.</li>
+      <li><b>Same model, plus Morpheus.</b> Trip planning, 296 unseen tasks: <b>56% &rarr; 98%</b> solved, no false
+      &ldquo;met&rdquo; in 282, and no task broken by a repair; at 10 cities, 9 &rarr; 35 of 37. Group travel, 30 unseen
+      tasks with 204 travelers: <b>4.4% &rarr; 84.8%</b>, 1 false &ldquo;met&rdquo; in 1,086.</li>
+      <li><b>Also for AI agents.</b> Coding agents: it reads each command before it runs, inside Claude Code, Codex
+      and Cursor, and stops the ones that break a rule you set. Research agents: experiment records that others can
+      recompute, with a frozen evaluator and repeated seeds. <span class="proof">On 4,743 replayed coding-agent commands:
+      10 stops, all correct, and no false stop. Experiment records: none of 12 planted cheats accepted, all 3 real small
+      improvements kept, and a third-party recomputation agreed on 11 of 11.</span></li>
     </ul>
     <div class="prod-live"><p><b>Try it:</b> <a href="https://morpheusplan.com">morpheusplan.com</a>. Invite-only beta,
     free during the beta; ask for an invite at <a href="mailto:info@morpheusplan.com">info@morpheusplan.com</a>.
-    <span class="proof">Numbers from internal tests, October 2026: planted mistakes, and simulated users (AI agents),
-    not real users.</span></p></div>
-    <p class="prod-foot"><b>Where it came from:</b> a planning engine for science
+    <span class="proof">Trip planning: Natural Plan (arXiv 2406.04520), official scorer, same model, paired, pass rules
+    committed before the run. Group travel: MemoryArena (arXiv 2602.16313). Both November 15, 2026; internal runs, not
+    reviewed by a third party.</span></p></div>
+    <p class="prod-foot"><b>Where it goes:</b> from checking one plan, to one action (a purchase, a command), to one
+    experiment, to an organization's decisions. What a checker cannot see goes to the step that proposes new
+    hypotheses and runs experiments that tell them apart; <a href="../blog/learning-to-investigate.html">Learning to
+    Investigate</a> measures how well LLM agents do that step today.
+    <b>Where it came from:</b> a planning engine for science
     (<i>Morphism-Oriented Reasoning with Provable, Honest, Epistemic Understanding for Science</i>) that builds a
     knowledge graph from papers &mdash; 18,600+ actions from 665 documents, every one traced to its page &mdash;
     plans over it, and accepts a plan only after a verifier passes it. Research: EMNLP Findings 2025 and four 2026
@@ -94,9 +99,15 @@
       <div><div class="prod-label">Trace Check-up &middot; for teams running AI agents</div>
       <h2 class="prod-h">Post-train your agent on the logs you already have. Step one: a check-up.</h2></div>
     </div>
-    <p class="prod-sub">It reads your agent's log on your own computer. In about a minute it says what the log is
-    missing, whether there is enough of it, and how training compares with letting the agent try again, counted in
-    tries &mdash; or that it can't tell yet, and what to collect.</p>
+    <p class="prod-sub">Large companies post-train their agents with training platforms that do the work around the
+    training: picking the data from their logs, writing the success check, and checking the trained model. Trace
+    Check-up gives any team that workflow, with its own logs, its own success check and its own held-out tasks, on
+    its own training-platform account. You train; we never do. In order: what to record, a check-up of the logs you
+    have (today), the data ready for your platform, and a check of the trained model on held-out tasks at the same
+    cost (coming soon).</p>
+    <p class="prod-sub">The check-up reads your agent's log on your own computer. In about a minute it says what the
+    log is missing, whether there is enough of it, and how training compares with letting the agent try again,
+    counted in tries &mdash; or that it can't tell yet, and what to collect.</p>
     <ul class="prod-list">
       <li><b>Train, or try again?</b> Two cards side by side: what trying again does, measured on your own log, and a
       rough range for training a small model, with the published results it is based on. Either card can say
