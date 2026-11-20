@@ -24,7 +24,7 @@
       <div>
       <div class="date">November 2026 &middot; research note</div>
       <div class="title"><a href="learning-to-investigate.html">We tried to build a scientific agent that learns from experience. Here is what failed.</a></div>
-      <div class="sum">A controlled study: can an LLM agent learn from its own experiments and notice when a given model is wrong? Lessons helped only on familiar mechanisms, one bad lesson cost about one nat of information, and its judgement was no better than a chi-square test.</div>
+      <div class="sum">A controlled study: can an LLM agent learn from its own experiments and notice when a given model is wrong? Lessons it wrote helped only on problems like ones it had seen, one bad lesson made its experiments much less informative, and its judgement that a model was wrong was no better than a standard statistical test.</div>
       </div>
     </li>
     <li>
@@ -32,7 +32,7 @@
       <div>
       <div class="date">October 2026</div>
       <div class="title"><a href="honeyguide-shadow-day.html">Can a cheaper model do your work? Measure it before you switch</a></div>
-      <div class="sum">Why my model router became Honeyguide, a one-day shadow test: what a cheaper setup would save and lose on your own traffic. What our test showed, and three surprises.</div>
+      <div class="sum">Why my model router became Honeyguide, a one-day test alongside your live traffic: what a cheaper setup would save and lose on your own traffic. What our test showed, and three surprises.</div>
       </div>
     </li>
     <li>
@@ -48,7 +48,7 @@
       <div>
       <div class="date">October 2026</div>
       <div class="title"><a href="train-or-try-again.html">Train, or let it try again? What your agent's own logs can already tell you</a></div>
-      <div class="sum">Three questions to answer from the log before you post-train: what to record, how much is enough, and training compared with trying again, counted in tries. With a small tool that runs on your own computer.</div>
+      <div class="sum">Three questions to answer from the log before you post-train: what to record, how much is enough, and training compared with letting the agent try again. With a small tool that runs on your own computer.</div>
       </div>
     </li>
     <li>
@@ -64,7 +64,7 @@
       <div>
       <div class="date">October 2026 &middot; literature review</div>
       <div class="title"><a href="review-routing-cascades.html">Routing LLM calls: predict the model, or verify the answer?</a></div>
-      <div class="sum">Literature review. Routers that predict from the prompt rarely generalize; cascades that check the cheap answer depend on the signal &mdash; and where Rung (now Honeyguide) differs.</div>
+      <div class="sum">Literature review. Routers that predict from the prompt rarely generalize; cascades that check the cheap answer are only as good as that check &mdash; and where Rung (now Honeyguide) differs.</div>
       </div>
     </li>
     <li>
@@ -88,7 +88,7 @@
       <div>
       <div class="date">October 2026</div>
       <div class="title"><a href="dont-predict-verify.html">Don't predict, verify: building a model router</a></div>
-      <div class="sum">Predicting the best model from the prompt recovered none of the available gain; climbing a price ladder on evidence did. The check that says &ldquo;escalate&rdquo; is the hard part.</div>
+      <div class="sum">Predicting the best model from the prompt recovered none of the available gain; trying the cheapest model first and moving up only when a check failed did. The hard part is the check that says when to move up.</div>
       </div>
     </li>
     <li>
@@ -96,7 +96,7 @@
       <div>
       <div class="date">October 2026</div>
       <div class="title"><a href="before-you-train-on-agent-logs.html">Getting your agent's logs ready for post-training</a></div>
-      <div class="sum">Seven mistakes a team can find in its logs before post-training, and why comparing steps can decide where comparing outcomes cannot.</div>
+      <div class="sum">Seven mistakes a team can find in its logs before post-training, and why checking each step can settle questions that checking only the final result cannot.</div>
       </div>
     </li>
     <li>
@@ -112,7 +112,7 @@
       <div>
       <div class="date">October 2026</div>
       <div class="title"><a href="judge-that-agrees-most.html">The judge that agrees most is not the safest</a></div>
-      <div class="sum">Nine graders, one frozen set. The grader with the highest agreement accepted half of the planted errors; the only graders that accepted none had some of the lowest agreement.</div>
+      <div class="sum">Nine graders on one fixed test set. The grader that agreed most with human labels accepted half of the errors we planted; the only graders that accepted none had some of the lowest agreement.</div>
       </div>
     </li>
   </ul>

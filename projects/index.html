@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projects · Shuhui Qu</title>
-<meta name="description" content="Morpheus, Honeyguide and Trace Check-up: a receipt for every AI conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.">
+<meta name="description" content="Morpheus, Honeyguide and Trace Check-up: evidence for every AI conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -18,39 +18,36 @@
 
 <div class="container post">
   <h1>Projects</h1>
-  <p class="meta">Three products for people and teams who put AI to work: a receipt you can check for every AI
-  conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.</p>
+  <p class="meta">Three products for people and teams who put AI to work: evidence you can check for every AI conclusion and action, paying less for LLM answers, and post-training an agent on the logs you already have.</p>
 
   <section class="prod" id="morpheus">
     <div class="prod-top"><span class="ico logo lg" aria-hidden="true"><img src="../logos/morpheus.svg" alt=""></span>
       <div><div class="prod-label">Morpheus &middot; morpheusplan.com &middot; invite-only beta</div>
       <h2 class="prod-h">AI says &ldquo;done.&rdquo; On what grounds?</h2></div>
     </div>
-    <p class="prod-sub">A receipt you can check, for every AI conclusion and every AI action. Write your requirements
+    <p class="prod-sub">Evidence you can check, for every AI conclusion and every AI action. Write your requirements
     the way you would say them &mdash; &ldquo;$600 in total at most&rdquo;, &ldquo;arrive in Boston by 12:00&rdquo;
     &mdash; and give Morpheus the AI's plan or action. Each requirement gets one of three verdicts, and each verdict
-    says who decided it: computed by code, judged by AI, or confirmed by you. Never blended.</p>
+    says who decided it: computed by code, judged by AI, or confirmed by you. The three are never mixed.</p>
     <ul class="prod-list">
-      <li><b>Met, with a receipt.</b> The arithmetic, the quote or the execution result behind it: &ldquo;Line 1
+      <li><b>Met, with the evidence.</b> The arithmetic, the quote or the run result behind it: &ldquo;Line 1
       arrives at 11:45, 15 minutes early.&rdquo; Not &ldquo;looks good&rdquo;.</li>
       <li><b>Violated: which line, by how much.</b> &ldquo;190 + 420 + 15 = 625 &gt; 600. That is $25 over.&rdquo;
-      The violation is repaired in place, and only what changed is checked again.</li>
+      It is fixed in place, and only what changed is checked again.</li>
       <li><b>Unclear: what is missing, and who supplies it.</b> A fact is missing: fetch it, then check again.
-      Several options fit: it lists them, and you pick. Nothing fits: re-read the requirement. &ldquo;No counterexample
-      found&rdquo; is never &ldquo;met&rdquo;, and it never forces an answer.</li>
-      <li><b>Same model, plus Morpheus.</b> Trip planning, 296 unseen tasks: <b>56% &rarr; 98%</b> solved, no false
-      &ldquo;met&rdquo; in 282, and no task broken by a repair; at 10 cities, 9 &rarr; 35 of 37. Group travel, 30 unseen
-      tasks with 204 travelers: <b>4.4% &rarr; 84.8%</b>, 1 false &ldquo;met&rdquo; in 1,086.</li>
+      Several options fit: it lists them, and you pick. Nothing fits: re-read the requirement. &ldquo;Found nothing wrong&rdquo; is never counted as &ldquo;met&rdquo;, and it never forces an answer.</li>
+      <li><b>Same model, plus Morpheus.</b> Trip planning, 296 unseen tasks: <b>56% &rarr; 98%</b> solved, none of 282 &ldquo;met&rdquo; verdicts wrong, and no task broken by a fix; at 10 cities, 9 &rarr; 35 of 37. Group travel, 30 unseen
+      tasks with 204 travelers: <b>4.4% &rarr; 84.8%</b>, 1 wrong &ldquo;met&rdquo; in 1,086.</li>
       <li><b>Also for AI agents.</b> Coding agents: it reads each command before it runs, inside Claude Code, Codex
-      and Cursor, and stops the ones that break a rule you set. Research agents: experiment records that others can
-      recompute, with a frozen evaluator and repeated seeds. <span class="proof">On 4,743 replayed coding-agent commands:
-      10 stops, all correct, and no false stop. Experiment records: none of 12 planted cheats accepted, all 3 real small
-      improvements kept, and a third-party recomputation agreed on 11 of 11.</span></li>
+      and Cursor, and stops the ones that break a rule you set. Research agents: records of ML experiments that anyone
+      can re-run: the scoring program is locked, and each change is run several times. <span class="proof">Replayed on
+      4,743 real coding-agent commands: it stopped 10, all correctly, and nothing it should not have. Experiment
+      records: of 12 fake improvements we planted, it accepted none; it kept all 3 real ones; an outside re-run agreed
+      on 11 of 11.</span></li>
     </ul>
     <div class="prod-live"><p><b>Try it:</b> <a href="https://morpheusplan.com">morpheusplan.com</a>. Invite-only beta,
     free during the beta; ask for an invite at <a href="mailto:info@morpheusplan.com">info@morpheusplan.com</a>.
-    <span class="proof">Trip planning: Natural Plan (arXiv 2406.04520), official scorer, same model, paired, pass rules
-    committed before the run. Group travel: MemoryArena (arXiv 2602.16313). Both November 15, 2026; internal runs, not
+    <span class="proof">Trip planning: Natural Plan (arXiv 2406.04520), scored by the benchmark's own scorer, the same model with and without Morpheus on the same tasks, pass rules written down before the run. Group travel: MemoryArena (arXiv 2602.16313). Both November 15, 2026; internal runs, not
     reviewed by a third party.</span></p></div>
     <p class="prod-foot"><b>Where it goes:</b> from checking one plan, to one action (a purchase, a command), to one
     experiment, to an organization's decisions. What a checker cannot see goes to the step that proposes new
@@ -58,8 +55,7 @@
     Investigate</a> measures how well LLM agents do that step today.
     <b>Where it came from:</b> a planning engine for science
     (<i>Morphism-Oriented Reasoning with Provable, Honest, Epistemic Understanding for Science</i>) that builds a
-    knowledge graph from papers &mdash; 18,600+ actions from 665 documents, every one traced to its page &mdash;
-    plans over it, and accepts a plan only after a verifier passes it. Research: EMNLP Findings 2025 and four 2026
+    knowledge graph from papers &mdash; 18,600+ scientific steps from 665 documents, every one traced to its page &mdash; plans over it, and accepts a plan only after a checker passes it. Research: EMNLP Findings 2025 and four 2026
     preprints. Write-ups: <a href="../blog/morpheus-second-opinion.html">a second opinion for AI-made plans</a> &middot;
     <a href="../blog/morpheus.html">what Morpheus is and does</a> &middot;
     <a href="../blog/judge-that-agrees-most.html">the judge that agrees most is not the safest</a> &middot;
@@ -72,7 +68,7 @@
       <div><div class="prod-label">Honeyguide (formerly Rung) &middot; for teams paying for LLM APIs</div>
       <h2 class="prod-h">See the saving and the quality cost before you switch to a cheaper model.</h2></div>
     </div>
-    <p class="prod-sub">A one-day shadow test on your own traffic. All day, your users get the top model's answers (in the hosted
+    <p class="prod-sub">A one-day test that runs alongside your live traffic. All day, your users get the top model's answers (in the hosted
     trial, DeepSeek's pro-max, on our key and at our cost). Behind each request, Honeyguide records what a cheap-model-first setup would have answered and what it would have cost.
     You mark about 30 answers, and the report says whether a cheaper setup is enough for your traffic.</p>
     <ul class="prod-list">
@@ -80,13 +76,13 @@
       answer climbs to a stronger model, under a hard cap per request. <span class="proof">Our test: 76% cheaper than
       always using the top model, for 8 points of quality ($1.86 against $7.75 per 1,000 requests; 69% against 77%
       right).</span></li>
-      <li><b>The report picks the setup.</b> Sometimes the answer is one cheaper model, not a cascade.
+      <li><b>The report picks the setup.</b> Sometimes the answer is one cheaper model, not a chain of models.
       <span class="proof">On the same test one cheaper model got 73% right at $1.43 per 1,000 requests &mdash; better
-      than the cascade on both counts.</span></li>
+      than the chain on both counts.</span></li>
       <li><b>One URL to change.</b> It uses the OpenAI API format: point your client at it for the day.</li>
     </ul>
     <div class="prod-live"><p><b>Try it:</b> <a href="https://honeyguide-trial.onrender.com">honeyguide-trial.onrender.com</a>.
-    The trial is invite-only; applications are open, and no team has run a shadow day yet. Honeyguide is open source:
+    The trial is invite-only; applications are open, and no team has run a test day yet. Honeyguide is open source:
     the code is published when the first team applies.</p></div>
     <p class="prod-foot"><b>Our test:</b> 100 short RouterArena questions on DeepSeek models, September 2026, not
     reviewed by anyone outside. Write-ups: <a href="../blog/honeyguide-shadow-day.html">Can a cheaper model do your
@@ -101,13 +97,10 @@
     </div>
     <p class="prod-sub">Large companies post-train their agents with training platforms that do the work around the
     training: picking the data from their logs, writing the success check, and checking the trained model. Trace
-    Check-up gives any team that workflow, with its own logs, its own success check and its own held-out tasks, on
-    its own training-platform account. You train; we never do. In order: what to record, a check-up of the logs you
-    have (today), the data ready for your platform, and a check of the trained model on held-out tasks at the same
-    cost (coming soon).</p>
+    Check-up gives any team that workflow, with its own logs, its own success check and its own test tasks, on its own training-platform account. You train; we never do. In order: what to record, a check-up of the logs you
+    have (today), the data ready for your platform, and a check of the trained model on tasks it did not train on, at the same cost (coming soon).</p>
     <p class="prod-sub">The check-up reads your agent's log on your own computer. In about a minute it says what the
-    log is missing, whether there is enough of it, and how training compares with letting the agent try again,
-    counted in tries &mdash; or that it can't tell yet, and what to collect.</p>
+    log is missing, whether there is enough of it, and how training compares with letting the agent try again &mdash; or that it can't tell yet, and what to collect.</p>
     <ul class="prod-list">
       <li><b>Train, or try again?</b> Two cards side by side: what trying again does, measured on your own log, and a
       rough range for training a small model, with the published results it is based on. Either card can say

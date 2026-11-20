@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shuhui Qu</title>
-<meta name="description" content="Shuhui Qu — reinforcement learning and AI agents whose answers can be checked. Builds Morpheus (morpheusplan.com), a receipt you can check for every AI conclusion and every AI action, plus Honeyguide and Trace Check-up.">
+<meta name="description" content="Shuhui Qu — reinforcement learning and AI agents whose answers can be checked. Builds Morpheus (morpheusplan.com), a checker for AI plans and actions that shows the evidence for every verdict, plus Honeyguide and Trace Check-up.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,8 +43,7 @@
 <div class="container" id="story">
   <div class="sectitle">my story</div>
   <p>Most of my work comes back to one question: when can a system act on the signal it is given? In my PhD I trained
-  multi-agent reinforcement learning policies to schedule large stochastic production networks, and at Samsung Display
-  I shipped one &mdash; a scheduler for lines with hundreds of machines, where a reward or a constraint that is slightly
+  multi-agent reinforcement learning policies to schedule large factories where orders and machine times are uncertain, and at Samsung Display I shipped one &mdash; a scheduler for production lines with hundreds of machines, where a reward or a constraint that is slightly
   wrong costs real money. Six of my patent applications are about exactly this: reweighting rewards, adapting a policy to a new
   reward, and letting a safety policy step in.</p>
   <p>With LLM agents the question comes back in a harder form. Where a simulator or a design-rule checker can score the
@@ -52,15 +51,14 @@
   partly checked, and the usual answer is to ask another model. In my own measurements, the LLM judges that agreed most
   with human labels still accepted plans that broke the user's budget &mdash; a shortcut an RL policy could learn to
   exploit. So I build checkers that do not just say &ldquo;looks good&rdquo;. They point to the line and the amount,
-  and say &ldquo;unclear&rdquo; instead of guessing. <a href="https://morpheusplan.com">Morpheus</a> gives every AI
-  conclusion and every AI action a receipt you can check. What a checker cannot see, such as a variable the question
-  left out, needs new hypotheses and experiments that tell explanations apart; in
+  and say &ldquo;unclear&rdquo; instead of guessing. <a href="https://morpheusplan.com">Morpheus</a> checks an AI's plan
+  or action against your requirements and shows the evidence for each verdict. Some problems a checker cannot catch,
+  such as a factor nobody thought to include. Those need new hypotheses, and experiments that tell them apart; in
   <a href="blog/learning-to-investigate.html">Learning to Investigate</a> I measured how well LLM research agents do
   that step. The same question about money led to <a href="projects/#honeyguide">Honeyguide</a>, which measures what a
   cheaper model setup would save and lose before a team switches, and to <a href="trace-checkup/">Trace Check-up</a>,
   which helps any team post-train its agent on the logs it already has.</p>
-  <p>The other thing I have learned is that a number is only as good as the way it was measured. I freeze held-out sets,
-  write down what counts as a result before the run, measure once, and report the runs that did not work.</p>
+  <p>The other thing I have learned is that a number is only as good as the way it was measured. I keep test sets untouched, write down what counts as a result before the run, measure once, and report the runs that did not work.</p>
 </div>
 
 <div class="container" id="focus">
@@ -74,15 +72,13 @@
     <div class="card">
       <span class="ico logo" aria-hidden="true"><img src="topics/env.svg" alt=""></span>
       <div class="card-title">Environments for agent post-training</div>
-      <p>Tool-use environments where simulators and design-rule checks score the outcome. In chip layout, SFT and RL
-      with verifiable rewards give an agent that designs layouts close to human experts' in one to two days.</p>
+      <p>Tool-use environments where simulators and design-rule checks score the outcome. In chip layout, fine-tuning and RL with rewards scored by the design tools give an agent that draws layouts close to human-expert quality in one to two days.</p>
     </div>
     <div class="card">
       <span class="ico logo" aria-hidden="true"><img src="topics/check.svg" alt=""></span>
       <div class="card-title">Checking AI's work</div>
-      <p>A receipt for every AI conclusion and action (Morpheus), the cost of a cheaper model measured before you
-      switch (Honeyguide), and post-training on the logs a team already has (Trace Check-up). Evaluations built to be
-      trusted: written criteria, blind labels, one measurement.</p>
+      <p>Evidence for every AI conclusion and action (Morpheus), the cost of a cheaper model measured before you
+      switch (Honeyguide), and post-training on the logs a team already has (Trace Check-up). Evaluations built to be trusted: written criteria, blind labels, measured once.</p>
     </div>
   </div>
 </div>
@@ -98,18 +94,18 @@
       and multi-agent reinforcement learning (RL) for production scheduling. I lead a team of 8 researchers and
       engineers and own delivery to the design, materials and manufacturing teams.</p>
       <ul>
-        <li><b>Chip design.</b> I built ChipEnv, a tool-use environment over the circuit and layout stack (circuit
-        simulation, design-rule checking, parasitic RC extraction). Fine-tuning on agent trajectories taught LLMs to use
-        the design tools, and RL with verifiable rewards from the design-rule checker and RC extraction taught them
-        better layouts. The agent designs high-scoring layouts close to human experts' in one to two days.</li>
-        <li><b>Materials.</b> I lead the search for long-lifetime deep-blue TADF emitters for OLED displays:
-        constrained molecular generation, property predictors, molecular-dynamics simulation, RL-based candidate search
-        and retrosynthesis filtering.</li>
+        <li><b>Chip design.</b> I built ChipEnv, a training environment where LLM agents use the real chip-design
+        tools (circuit simulation, design-rule checks, wiring resistance and capacitance extraction). Fine-tuning on
+        recorded agent runs taught LLMs to use the tools, and RL with rewards scored by the same tools taught them to
+        draw better layouts. The agent now draws layouts close to human-expert quality in one to two days.</li>
+        <li><b>Materials.</b> I lead the search for long-lasting deep-blue TADF molecules, the light-emitting layer
+        of OLED displays: molecule generation, property prediction, physics simulation and RL search, keeping only
+        molecules that chemists can make.</li>
         <li><b>Scheduling.</b> Our multi-agent RL scheduler runs on production lines with hundreds of machines and tens
         of thousands of orders a day, and cut operating cost by 20% against the previous scheduler.</li>
-        <li><b>Earlier.</b> ChatYield, an LLM agent for yield optimization (fine-tuned Llama-3; every proposed action is
-        tested in a digital-twin simulation before an engineer sees it), and production ML for predictive maintenance
-        (100% recall at a 48-hour lead time) and defect inspection (99% recall, 95% of inspections automated).</li>
+        <li><b>Earlier.</b> ChatYield, an LLM agent that suggests fixes to raise production yield (fine-tuned Llama-3;
+        each fix is tested in a simulation of the line before an engineer sees it), and production ML that predicts
+        machine failures 48 hours ahead (100% recall) and automates 95% of defect inspections (99% recall).</li>
       </ul>
     </div>
   </div>
@@ -119,15 +115,15 @@
     <div class="rail"><span class="ico logo" aria-hidden="true"><img src="logos/morpheus.svg" alt=""></span></div>
     <div class="what">
       <p>As an affiliated researcher at <b>Stanford</b>, I build <b>Morpheus</b>
-      (<a href="https://morpheusplan.com">morpheusplan.com</a>): a receipt you can check, for every AI conclusion and
-      every AI action. Each of the user's requirements gets one of three verdicts: <i>met</i>, with the arithmetic,
-      quote or execution result behind it; <i>violated</i>, with the line and the amount, repaired in place and checked
-      again; or <i>unclear</i>, with what is missing and who has to supply it. With the same model, Morpheus took trip
-      planning from 56% to 98% of 296 unseen tasks with no false &ldquo;met&rdquo;, and group travel from 4.4% to 84.8%.
-      The same checker stops a coding agent's rule-breaking command before it runs, inside Claude Code, Codex and
-      Cursor, and keeps experiment records that others can recompute. Morpheus grew out of a planning engine for science that builds a
-      knowledge graph from papers (18,600+ actions from 665 documents, each traced to its page) and accepts a plan only
-      after a verifier passes it. The research behind it: EMNLP Findings 2025 and four 2026 preprints. It is in an
+      (<a href="https://morpheusplan.com">morpheusplan.com</a>). It checks an AI's plan or action against the user's own
+      requirements, and each requirement gets one of three verdicts: <i>met</i>, with the evidence (the arithmetic, a
+      quote or a run result); <i>violated</i>, with the line and the amount, then fixed and checked again; or
+      <i>unclear</i>, with what is missing and who has to supply it. With the same model, Morpheus took trip planning from
+      56% to 98% of 296 unseen tasks with no wrong approvals, and group travel from 4.4% to 84.8%. The same checker
+      stops a coding agent's rule-breaking command before it runs, inside Claude Code, Codex and Cursor, and keeps
+      records of ML experiments that anyone can re-run to confirm. Morpheus grew out of a planning engine for science that builds a
+      knowledge graph from papers (18,600+ scientific steps from 665 documents, each traced to its page) and accepts a
+      plan only after a checker passes it. The research behind it: EMNLP Findings 2025 and four 2026 preprints. It is in an
       invite-only beta.</p>
     </div>
   </div>
@@ -137,7 +133,7 @@
     <div class="rail"><span class="ico logo light" aria-hidden="true"><img src="logos/honeyguide.svg" alt=""></span></div>
     <div class="what">
       <p>I also build <b>Honeyguide</b> (formerly Rung; <a href="https://honeyguide-trial.onrender.com">trial</a>),
-      a one-day shadow test for teams that pay for LLM APIs. It shows what a cheaper model setup would save, and what it
+      a one-day test that runs alongside the live traffic of teams that pay for LLM APIs. It shows what a cheaper model setup would save, and what it
       would lose in quality, on the team's own traffic before they switch.</p>
     </div>
   </div>
@@ -148,8 +144,7 @@
     <div class="what">
       <p>And <b><a href="trace-checkup/">Trace Check-up</a></b>. Large companies post-train their agents with training
       platforms that do the work around the training: picking the data from their logs, writing the success check,
-      and checking the trained model. Trace Check-up gives any team that workflow, with its own logs, its own success
-      check and its own held-out tasks, on its own training-platform account. Today it reads the logs on the team's own
+      and checking the trained model. Trace Check-up gives any team that workflow, with its own logs, its own success check and its own test tasks, on its own training-platform account. Today it reads the logs on the team's own
       computer and says what to record, what is missing and how much more to collect; getting the data ready for the
       platform and checking the trained model are coming soon.</p>
     </div>
@@ -160,13 +155,14 @@
     <div class="rail"><span class="ico c-rl" aria-hidden="true"><svg><use href="icons.svg#i-loop"/></svg></span></div>
     <div class="what">
       <p>On scientific discovery, I designed <b><a href="blog/learning-to-investigate.html">Learning to Investigate</a></b>,
-      a pre-registered benchmark that measures where LLM research agents fall short: choosing experiments, noticing that
-      the model they were given is wrong, and proposing a better one. Each world hides a mechanism over six inputs, and
-      the agent gets ten noisy experiments, with strong statistical baselines on the same data. Lessons from 60 past
-      episodes transferred to new mechanisms no better than lessons from 5; one sentence of procedural advice cost about
-      one nat of information; and the agent named all three variables of a three-way interaction in 45% of episodes but
-      wrote the interaction in 15%. These gaps set the next targets: experiments that separate the explanations still
-      in play, and lessons that carry a tested scope.</p>
+      a benchmark that tests whether an LLM research agent can find a hidden formula through its own experiments, with
+      standard statistics on the same data for comparison. Each test hides a formula over six inputs, and the agent gets
+      ten noisy experiments. Lessons the agent wrote from 60 past problems helped no more than lessons from 5 on new
+      kinds of problems. One bad lesson (&ldquo;start with every input at its minimum and change one at a time&rdquo;)
+      hid effects that need two inputs high together, and deleting it made the experiments clearly more informative.
+      And the agent named all three variables of a three-way effect in 45% of runs, but wrote the formula that combines
+      them in only 15%. The next step is the one Morpheus points to: when the data cannot tell explanations apart, run
+      the experiment that does.</p>
     </div>
   </div>
 
@@ -197,7 +193,7 @@
   <p>Shuhui Qu is a machine learning researcher and engineer working on reinforcement learning and on AI agents whose
   answers can be checked. At Samsung Display American Lab, Shuhui is a Senior Staff ML Engineer and the project lead
   for chip-design agents, materials discovery and multi-agent RL scheduling; at Stanford, Shuhui builds Morpheus
-  (morpheusplan.com), which gives every AI conclusion and action a receipt you can check, and two smaller tools:
+  (morpheusplan.com), which checks AI plans and actions against the user's requirements and shows the evidence for each verdict, and two smaller tools:
   Honeyguide, which measures what a cheaper LLM setup would save and lose before a team switches, and Trace Check-up,
   which helps any team post-train its agent on the logs it already has. Shuhui also studies where LLM research agents
   fall short (Learning to Investigate). PhD, Stanford University. 50+ papers, 1,700+ citations, 10 granted US patents and more pending.</p>
@@ -208,10 +204,10 @@
   <div class="pcards">
     <a class="pcard" href="projects/#morpheus"><span class="ico logo" aria-hidden="true"><img src="logos/morpheus.svg" alt=""></span>
       <div class="pn">Morpheus</div>
-      <div class="pd">A receipt you can check for every AI conclusion and action: met, violated (which line, by how much) or unclear (what is missing, who supplies it). Live at morpheusplan.com.</div></a>
+      <div class="pd">Checks an AI's plan or action against your requirements: met (with the evidence), violated (which line, by how much) or unclear (what is missing, who supplies it). Live at morpheusplan.com.</div></a>
     <a class="pcard" href="projects/#honeyguide"><span class="ico logo light" aria-hidden="true"><img src="logos/honeyguide.svg" alt=""></span>
       <div class="pn">Honeyguide</div>
-      <div class="pd">See what a cheaper LLM setup would save, and lose, on your own traffic &mdash; a one-day shadow test before you switch.</div></a>
+      <div class="pd">See what a cheaper LLM setup would save, and lose, on your own traffic &mdash; a one-day test alongside your live traffic, before you switch.</div></a>
     <a class="pcard" href="projects/#telemetry"><span class="ico logo" aria-hidden="true"><img src="logos/trace-checkup.svg" alt=""></span>
       <div class="pn">Trace Check-up</div>
       <div class="pd">The post-training workflow large companies get from training platforms, for any team, on its own logs. Step one: what to record and how much is enough.</div></a>
